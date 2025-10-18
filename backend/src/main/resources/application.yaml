@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: warehouse
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  redis:
+    host: ${SPRING_REDIS_HOST}
+    port: ${SPRING_REDIS_PORT}
+
+server:
+  port: ${APP_PORT}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-exp-seconds: 86400000
+    refresh-token-exp-seconds: 1209600
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
