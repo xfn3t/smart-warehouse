@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-ai-predictions
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: ai_predictions
+      changes:
+        - createTable:
+            tableName: ai_predictions
+            remarks: Прогнозы ИИ
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: VARCHAR(50)
+              - column:
+                  name: prediction_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: days_until_stockout
+                  type: INTEGER
+              - column:
+                  name: recommended_order
+                  type: INTEGER
+              - column:
+                  name: confidence_score
+                  type: DECIMAL(3,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - addForeignKeyConstraint:
+            baseTableName: ai_predictions
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            constraintName: fk_ai_product
+            onDelete: SET NULL

@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-inventory-history
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: inventory_history
+      changes:
+        - createTable:
+            tableName: inventory_history
+            remarks: История инвентаризации
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: robot_id
+                  type: VARCHAR(50)
+              - column:
+                  name: product_id
+                  type: VARCHAR(50)
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: zone
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: row_number
+                  type: INTEGER
+              - column:
+                  name: shelf_number
+                  type: INTEGER
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  remarks: "'OK', 'LOW_STOCK', 'CRITICAL'"
+              - column:
+                  name: scanned_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - addForeignKeyConstraint:
+            baseTableName: inventory_history
+            baseColumnNames: robot_id
+            referencedTableName: robots
+            referencedColumnNames: id
+            constraintName: fk_inventory_robot
+            onDelete: SET NULL
+
+        - addForeignKeyConstraint:
+            baseTableName: inventory_history
+            baseColumnNames: product_id
+            referencedTableName: products
+            referencedColumnNames: id
+            constraintName: fk_inventory_product
+            onDelete: SET NULL

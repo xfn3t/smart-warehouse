@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-indexes
+      author: dev
+      preConditions:
+        - tableExists:
+            tableName: inventory_history
+      changes:
+        - createIndex:
+            indexName: idx_inventory_scanned
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: scanned_at
+                  descending: true
+        - createIndex:
+            indexName: idx_inventory_product
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: product_id
+        - createIndex:
+            indexName: idx_inventory_zone
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: zone

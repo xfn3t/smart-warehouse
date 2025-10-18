@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-users
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: users
+      changes:
+        - createTable:
+            tableName: users
+            remarks: Пользователи системы
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(50)
+                  remarks: "'operator', 'admin', 'viewer'"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP

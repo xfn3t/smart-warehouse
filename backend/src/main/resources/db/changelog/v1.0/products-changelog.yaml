@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-products
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: products
+      changes:
+        - createTable:
+            tableName: products
+            remarks: Товары склада
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(50)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(100)
+              - column:
+                  name: min_stock
+                  type: INTEGER
+                  defaultValueNumeric: 10
+              - column:
+                  name: optimal_stock
+                  type: INTEGER
+                  defaultValueNumeric: 100

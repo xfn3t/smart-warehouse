@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-robots
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: robots
+      changes:
+        - createTable:
+            tableName: robots
+            remarks: Роботы склада
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(50)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  defaultValue: active
+              - column:
+                  name: battery_level
+                  type: INTEGER
+              - column:
+                  name: last_update
+                  type: TIMESTAMP
+              - column:
+                  name: current_zone
+                  type: VARCHAR(10)
+              - column:
+                  name: current_row
+                  type: INTEGER
+              - column:
+                  name: current_shelf
+                  type: INTEGER

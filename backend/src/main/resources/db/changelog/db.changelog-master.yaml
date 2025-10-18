@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - include:
+      file: v1.0/users-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/refresh-tokens-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/robots-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/products-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/inventory-history-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/ai-predictions-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/indexes-changelog.yaml
+      relativeToChangelogFile: true
