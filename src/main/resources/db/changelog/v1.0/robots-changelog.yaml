@@ -13,10 +13,16 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: VARCHAR(50)
+                  type: BIGSERIAL
                   constraints:
                     primaryKey: true
                     nullable: false
+              - column:
+                  name: robot_code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
               - column:
                   name: status
                   type: VARCHAR(50)

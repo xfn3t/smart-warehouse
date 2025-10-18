@@ -19,7 +19,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: product_id
-                  type: VARCHAR(50)
+                  type: BIGINT
               - column:
                   name: prediction_date
                   type: DATE

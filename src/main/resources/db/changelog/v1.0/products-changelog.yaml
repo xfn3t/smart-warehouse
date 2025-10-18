@@ -13,10 +13,17 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: VARCHAR(50)
+                  type: BIGSERIAL
                   constraints:
                     primaryKey: true
                     nullable: false
+              - column:
+                  name: sku_code
+                  type: VARCHAR(50)
+                  remarks: Внешний код товара (например TEL-XXXX)
+                  constraints:
+                    nullable: false
+                    unique: true
               - column:
                   name: name
                   type: VARCHAR(255)

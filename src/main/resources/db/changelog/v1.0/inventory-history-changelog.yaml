@@ -19,10 +19,10 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: robot_id
-                  type: VARCHAR(50)
+                  type: BIGINT
               - column:
                   name: product_id
-                  type: VARCHAR(50)
+                  type: BIGINT
               - column:
                   name: quantity
                   type: INTEGER
