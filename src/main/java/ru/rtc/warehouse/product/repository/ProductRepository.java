@@ -5,5 +5,5 @@ import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.product.model.Product;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, String> {
+public interface ProductRepository extends JpaRepository<Product, Long> {
 }

@@ -10,9 +10,9 @@ import javax.validation.constraints.*;
 @Setter
 public class RobotCreateRequest {
 
-	@Size(max = 50, message = "ID must not exceed 50 characters")
-	@Pattern(regexp = "RB-\\d{4}", message = "ID must follow pattern RB-XXXХ")
-	private String id;
+	@Size(max = 50, message = "Code must not exceed 50 characters")
+	@Pattern(regexp = "RB-\\d{4}", message = "Code must follow pattern RB-XXXХ")
+	private String code;
 
 	@NotNull(message = "Status is required")
 	private RobotStatus status = RobotStatus.ACTIVE;

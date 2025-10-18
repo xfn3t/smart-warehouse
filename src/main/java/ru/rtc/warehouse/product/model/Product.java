@@ -14,8 +14,11 @@ import java.util.UUID;
 public class Product {
 
 	@Id
-	@Column(length = 50)
-	private String id; // например TEL-XXXX
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(name = "sku_code", length = 50, nullable = false, unique = true)
+	private String code;
 
 	@Column(nullable = false, length = 255)
 	private String name;

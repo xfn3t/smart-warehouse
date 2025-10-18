@@ -11,24 +11,24 @@ import ru.rtc.warehouse.robot.model.Robot;
 public interface InventoryHistoryMapper {
 
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "robot", source = "robotId", qualifiedByName = "mapRobotIdToRobot")
-	@Mapping(target = "product", source = "productId", qualifiedByName = "mapProductIdToProduct")
+	@Mapping(target = "robot", source = "robotCode", qualifiedByName = "mapRobotCodeToRobot")
+	@Mapping(target = "product", source = "productCode", qualifiedByName = "mapProductCodeToProduct")
 	@Mapping(target = "createdAt", ignore = true)
 	InventoryHistory toEntity(InventoryHistoryCreateRequest dto);
 
-	@Named("mapRobotIdToRobot")
-	default Robot mapRobotIdToRobot(Long robotId) {
-		if (robotId == null) return null;
+	@Named("mapRobotCodeToRobot")
+	default Robot mapRobotCodeToRobot(String code) {
+		if (code == null) return null;
 		return Robot.builder()
-				.id("RB-" + robotId)
+				.code(code)
 				.build();
 	}
 
-	@Named("mapProductIdToProduct")
-	default Product mapProductIdToProduct(String productId) {
-		if (productId == null) return null;
+	@Named("mapProductCodeToProduct")
+	default Product mapProductCodeToProduct(String code) {
+		if (code == null) return null;
 		return Product.builder()
-				.id(productId)
+				.code(code)
 				.build();
 	}
 }

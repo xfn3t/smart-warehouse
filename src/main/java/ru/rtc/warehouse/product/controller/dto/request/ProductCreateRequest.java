@@ -6,9 +6,9 @@ import jakarta.validation.constraints.Size;
 
 public class ProductCreateRequest {
 
-	@NotNull(message = "ID can't be null")
-	@Size(max = 50, message = "ID must not exceed 50 characters")
-	private String id;
+	@NotNull(message = "Code can't be null")
+	@Size(max = 50, message = "Code must not exceed 50 characters")
+	private String code;
 
 	@NotNull(message = "Product name is required")
 	@Size(min = 1, max = 255, message = "Product name must be between 1 and 255 characters")

@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @Setter
 public class InventoryHistoryCreateRequest {
 	@NotNull(message = "Robot ID is required")
-	private Long robotId;
+	private Long robotCode;
 
 	@NotNull(message = "Product ID is required")
 	@Size(max = 50, message = "Product ID must not exceed 50 characters")
-	private String productId;
+	private String productCode;
 
 	@NotNull(message = "Quantity is required")
 	private Integer quantity;

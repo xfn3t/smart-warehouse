@@ -23,8 +23,8 @@ public class RobotServiceImpl implements RobotService {
 	}
 
 	public void save(RobotCreateRequest robotCreateRequest) {
-		if (robotCreateRequest.getId() == null) {
-			robotCreateRequest.setId(generateUniqueRobotId());
+		if (robotCreateRequest.getCode() == null) {
+			robotCreateRequest.setCode(generateUniqueRobotId());
 		}
 		Robot robot = robotMapper.toEntity(robotCreateRequest);
 		robotRepository.save(robot);

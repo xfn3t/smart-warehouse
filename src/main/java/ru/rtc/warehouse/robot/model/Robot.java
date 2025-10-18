@@ -16,8 +16,11 @@ import java.time.LocalDateTime;
 public class Robot {
 
 	@Id
-	@Column(length = 50)
-	private String id; // RB-XXX
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(name = "robot_code", length = 50, nullable = false, unique = true)
+	private String code;
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 50, nullable = false)
