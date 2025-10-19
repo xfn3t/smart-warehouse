@@ -24,6 +24,13 @@ public class GlobalExceptionHandler {
 		return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
 	}
 
+	@ExceptionHandler(AlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleAlreadyExistsException(
+			AlreadyExistsException ex, WebRequest request) {
+
+		return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGlobalException(
 			Exception ex, WebRequest request) {
