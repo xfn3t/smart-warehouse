@@ -2,7 +2,7 @@ package ru.rtc.warehouse.robot.controller.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
+import ru.rtc.warehouse.robot.model.RobotStatus;
 
 import javax.validation.constraints.*;
 
@@ -15,7 +15,7 @@ public class RobotCreateRequest {
 	private String code;
 
 	@NotNull(message = "Status is required")
-	private RobotStatus status = RobotStatus.ACTIVE;
+	private String status;
 
 	@Min(value = 0, message = "Battery level must be between 0 and 100")
 	@Max(value = 100, message = "Battery level must be between 0 and 100")

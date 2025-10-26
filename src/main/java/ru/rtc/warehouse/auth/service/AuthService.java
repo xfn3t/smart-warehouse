@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.auth.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
@@ -11,38 +12,28 @@ import ru.rtc.warehouse.auth.controller.dto.response.AuthResponse;
 import ru.rtc.warehouse.auth.model.RefreshToken;
 import ru.rtc.warehouse.auth.repository.RefreshTokenRepository;
 import ru.rtc.warehouse.auth.util.JwtUtil;
+import ru.rtc.warehouse.user.controller.dto.request.UserCreateRequest;
+import ru.rtc.warehouse.user.mapper.UserMapper;
 import ru.rtc.warehouse.user.model.User;
-import ru.rtc.warehouse.user.repository.UserRepository;
-
+import ru.rtc.warehouse.user.service.UserService;
 
 import java.time.Instant;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
 	private final AuthenticationManager authenticationManager;
 	private final JwtUtil jwtUtil;
-	private final UserRepository userRepository;
+	private final UserService userService;
+	private final UserMapper userMapper;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final long refreshTokenValiditySeconds;
 
-	public AuthService(
-			AuthenticationManager authenticationManager,
-			JwtUtil jwtUtil,
-			UserRepository userRepository,
-			RefreshTokenRepository refreshTokenRepository,
-			PasswordEncoder passwordEncoder,
-			@Value("${security.jwt.refresh-token-exp-seconds:1209600}") long refreshTokenValiditySeconds // default 14 days
-	) {
-		this.authenticationManager = authenticationManager;
-		this.jwtUtil = jwtUtil;
-		this.userRepository = userRepository;
-		this.refreshTokenRepository = refreshTokenRepository;
-		this.passwordEncoder = passwordEncoder;
-		this.refreshTokenValiditySeconds = refreshTokenValiditySeconds;
-	}
+	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
+	private long refreshTokenValiditySeconds; // default 14 days
+
 
 	public AuthResponse login(String email, String password) {
 		Authentication auth = authenticationManager.authenticate(
@@ -64,7 +55,7 @@ public class AuthService {
 
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", user.getRole().name());
+		claims.put("roles", user.getRole().getCode());
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -110,29 +101,21 @@ public class AuthService {
 		});
 	}
 
-	public void register(RegisterRequest request) {
+	public AuthResponse register(RegisterRequest request) {
 
-		String email = request.getEmail();
-		String password = request.getPassword();
-		String name = request.getName();
-		User.Role role = request.getRole();
-
-		if (userRepository.findByEmail(email).isPresent()) {
-			throw new RuntimeException("User already exists");
-		}
-		User u = User.builder()
-				.email(email)
-				.passwordHash(passwordEncoder.encode(password))
-				.name(name)
-				.role(role)
-				.createdAt(java.time.LocalDateTime.now())
+		UserCreateRequest createRequest = UserCreateRequest.builder()
+				.email(request.getEmail())
+				.name(request.getName())
+				.password(passwordEncoder.encode(request.getPassword()))
+				.role(request.getRole() != null ? request.getRole() : null)
 				.build();
-		User user = userRepository.save(u);
+
+		User user = userMapper.toEntity(userService.save(createRequest));
 
 		String accessToken = createAccessToken(user);
 		RefreshToken refreshToken = createAndSaveRefreshToken(user);
 
-		AuthResponse.builder()
+		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken.getToken())
 				.accessTokenExpiresInSeconds(

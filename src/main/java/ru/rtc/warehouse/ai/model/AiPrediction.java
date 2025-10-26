@@ -1,11 +1,24 @@
 package ru.rtc.warehouse.ai.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ru.rtc.warehouse.product.model.Product;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import ru.rtc.warehouse.product.model.Product;
 
 @Entity
 @Table(name = "ai_predictions")
@@ -27,15 +40,15 @@ public class AiPrediction {
 	@Column(name = "prediction_date", nullable = false)
 	private LocalDate predictionDate;
 
-	@Column(name = "days_until_stockout")
 	private Integer daysUntilStockout;
-
-	@Column(name = "recommended_order")
 	private Integer recommendedOrder;
 
-	@Column(name = "confidence_score", precision = 3, scale = 2)
+	@Column(precision = 3, scale = 2)
 	private BigDecimal confidenceScore;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
+
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
 }
