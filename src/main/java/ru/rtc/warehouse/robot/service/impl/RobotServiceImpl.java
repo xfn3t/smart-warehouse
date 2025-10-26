@@ -2,24 +2,28 @@ package ru.rtc.warehouse.robot.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
+import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.mapper.RobotMapper;
 import ru.rtc.warehouse.robot.model.Robot;
+import ru.rtc.warehouse.robot.model.RobotStatus.StatusCode;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
 import ru.rtc.warehouse.robot.service.RobotService;
+import ru.rtc.warehouse.robot.service.RobotStatusService;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class RobotServiceImpl implements RobotService {
 
 	private final RobotMapper robotMapper;
 	private final RobotEntityService robotEntityService;
+	private final RobotStatusService robotStatusService;
 
 	private String generateUniqueRobotId() {
 		Integer maxNumber = robotEntityService.findMaxRobotNumber();
@@ -42,7 +46,7 @@ public class RobotServiceImpl implements RobotService {
 		Robot robot = robotEntityService.findById(id);
 
 		String code = updateRequest.getCode();
-		RobotStatus status = updateRequest.getStatus();
+		String status = updateRequest.getStatus();
 		Integer batteryLevel = updateRequest.getBatteryLevel();
 		String currentZone = updateRequest.getCurrentZone();
 		Integer currentRow = updateRequest.getCurrentRow();
@@ -52,7 +56,7 @@ public class RobotServiceImpl implements RobotService {
 			robot.setCode(code);
 		}
 		if (status != null) {
-			robot.setStatus(status);
+			robot.setStatus(robotStatusService.findByCode(StatusCode.from(status)));
 		}
 		if (batteryLevel != null) {
 			robot.setBatteryLevel(batteryLevel);
@@ -73,16 +77,19 @@ public class RobotServiceImpl implements RobotService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<RobotDTO> findAll() {
 		return robotMapper.toDtoList(robotEntityService.findAll());
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public RobotDTO findById(Long id) {
 		return robotMapper.toDto(robotEntityService.findById(id));
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public RobotDTO findByCode(String code) {
 		return robotMapper.toDto(robotEntityService.findByCode(code));
 	}

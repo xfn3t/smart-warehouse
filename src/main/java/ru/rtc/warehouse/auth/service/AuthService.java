@@ -55,7 +55,7 @@ public class AuthService {
 
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", user.getRole().name());
+		claims.put("roles", user.getRole().getCode());
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -107,7 +107,7 @@ public class AuthService {
 				.email(request.getEmail())
 				.name(request.getName())
 				.password(passwordEncoder.encode(request.getPassword()))
-				.role(request.getRole() != null ? request.getRole().name() : null)
+				.role(request.getRole() != null ? request.getRole() : null)
 				.build();
 
 		User user = userMapper.toEntity(userService.save(createRequest));

@@ -16,6 +16,10 @@ spring:
     host: ${SPRING_REDIS_HOST}
     port: ${SPRING_REDIS_PORT}
 
+  liquibase:
+    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    enabled: true
+
 server:
   port: ${APP_PORT}
 

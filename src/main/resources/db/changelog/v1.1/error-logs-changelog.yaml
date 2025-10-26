@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-error-logs
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: error_logs
+      changes:
+        - createTable:
+            tableName: error_logs
+            remarks: Логирование ошибок
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: message
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stacktrace
+                  type: TEXT
+              - column:
+                  name: source
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP

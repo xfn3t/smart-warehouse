@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-enable-pgcrypto-extension
+      author: dev
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: "CREATE EXTENSION IF NOT EXISTS pgcrypto;"

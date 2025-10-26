@@ -1,0 +1,85 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-inventory-history
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: inventory_history
+      changes:
+        - createTable:
+            tableName: inventory_history
+            remarks: История инвентаризации
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: message_id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_inventory_warehouse
+                    references: warehouses(id)
+              - column:
+                  name: robot_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_inventory_robot
+                    references: robots(id)
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_inventory_product
+                    references: products(id)
+              - column:
+                  name: zone
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: row_number
+                  type: INTEGER
+              - column:
+                  name: shelf_number
+                  type: INTEGER
+              - column:
+                  name: expected_quantity
+                  type: INTEGER
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: difference
+                  type: INTEGER
+              - column:
+                  name: status_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_inventory_status
+                    references: inventory_status(id)
+              - column:
+                  name: scanned_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
