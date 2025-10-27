@@ -35,6 +35,7 @@ public class InventoryHistoryMapper {
 		dto.setStatus(entity.getStatus());
 		dto.setScannedAt(entity.getScannedAt());
 		dto.setCreatedAt(entity.getCreatedAt());
+		dto.setMessageId(entity.getMessageId());
 		return dto;
 	}
 
@@ -61,6 +62,7 @@ public class InventoryHistoryMapper {
 		entity.setStatus(dto.getStatus());
 		entity.setScannedAt(dto.getScannedAt());
 		entity.setCreatedAt(dto.getCreatedAt());
+		entity.setMessageId(dto.getMessageId());
 		return entity;
 	}
 
@@ -82,6 +84,7 @@ public class InventoryHistoryMapper {
 		e.setShelfNumber(r.getShelfNumber());
 		e.setStatus(r.getStatus());
 		e.setScannedAt(r.getScannedAt());
+		e.setMessageId(r.getMessageId());
 
 		return e;
 	}
@@ -106,6 +109,7 @@ public class InventoryHistoryMapper {
 		entity.setShelfNumber(request.getShelfNumber());
 		entity.setStatus(request.getStatus());
 		entity.setScannedAt(request.getScannedAt());
+		entity.setMessageId(request.getMessageId());
 		return entity;
 	}
 
