@@ -2,7 +2,10 @@ package ru.rtc.warehouse.inventory.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.Builder.Default;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
 import ru.rtc.warehouse.robot.model.Robot;
@@ -49,6 +52,10 @@ public class InventoryHistory {
 	private LocalDateTime scannedAt;
 
 	@Column(name = "created_at", nullable = false, updatable = false)
+	@Default
 	private LocalDateTime createdAt = LocalDateTime.now();
+
+	@Column(name = "message_id", nullable = false)
+	private UUID messageId;
 
 }
