@@ -1,10 +1,14 @@
 package ru.rtc.warehouse.robot.controller.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import ru.rtc.warehouse.robot.common.enums.RobotStatus;
 
-import javax.validation.constraints.*;
 
 @Getter
 @Setter
