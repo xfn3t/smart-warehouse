@@ -2,6 +2,7 @@ package ru.rtc.warehouse.robot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.Builder.Default;
 import ru.rtc.warehouse.robot.common.enums.RobotStatus;
 
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class Robot {
 	@Column(name = "robot_code", length = 50, nullable = false, unique = true)
 	private String code;
 
+	@Default
 	@Enumerated(EnumType.STRING)
 	@Column(length = 50, nullable = false)
 	private RobotStatus status = RobotStatus.ACTIVE;
