@@ -7,6 +7,7 @@ import lombok.Setter;
 import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -35,4 +36,7 @@ public class InventoryHistoryCreateRequest {
 
 	@NotNull(message = "Scanned at date is required")
 	private LocalDateTime scannedAt;
+
+	@NotNull
+	private UUID messageId;
 }

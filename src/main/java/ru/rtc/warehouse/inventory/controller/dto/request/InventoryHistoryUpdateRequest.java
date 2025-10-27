@@ -6,6 +6,7 @@ import lombok.Setter;
 import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -19,4 +20,5 @@ public class InventoryHistoryUpdateRequest {
 	private Integer shelfNumber;
 	private InventoryHistoryStatus status;
 	private LocalDateTime scannedAt;
+	private UUID messageId;
 }
