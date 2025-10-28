@@ -26,8 +26,13 @@ public class InventoryHistoryMapper {
 
 		InventoryHistoryDTO dto = new InventoryHistoryDTO();
 		dto.setId(entity.getId());
-		dto.setRobot(entity.getRobot() != null ? entity.getRobot().getCode() : null);
-		dto.setProduct(entity.getProduct() != null ? entity.getProduct().getCode() : null);
+
+		dto.setRobotCode(entity.getRobot() != null ? entity.getRobot().getCode() : null);
+		if (entity.getProduct() != null) {
+			dto.setSkuCode(entity.getProduct().getCode());     // <-- код (sku)
+			dto.setProductName(entity.getProduct().getName()); // <-- название
+		}
+
 		dto.setQuantity(entity.getQuantity());
 		dto.setZone(entity.getZone());
 		dto.setRowNumber(entity.getRowNumber());
@@ -40,9 +45,7 @@ public class InventoryHistoryMapper {
 
 	public List<InventoryHistoryDTO> toDtoList(List<InventoryHistory> entities) {
 		if (entities == null) return List.of();
-		return entities.stream()
-				.map(this::toDto)
-				.collect(Collectors.toList());
+		return entities.stream().map(this::toDto).collect(Collectors.toList());
 	}
 
 	public InventoryHistory toEntity(InventoryHistoryDTO dto) {
@@ -51,8 +54,8 @@ public class InventoryHistoryMapper {
 		InventoryHistory entity = new InventoryHistory();
 		entity.setId(dto.getId());
 
-		entity.setRobot(findRobot(dto.getRobot()));
-		entity.setProduct(findProduct(dto.getProduct()));
+		entity.setRobot(findRobot(dto.getRobotCode()));
+		entity.setProduct(findProductBySku(dto.getSkuCode())); // <-- по skuCode
 
 		entity.setQuantity(dto.getQuantity());
 		entity.setZone(dto.getZone());
@@ -65,7 +68,6 @@ public class InventoryHistoryMapper {
 	}
 
 	public InventoryHistory toEntity(InventoryHistoryCreateRequest r) {
-
 		InventoryHistory e = new InventoryHistory();
 
 		Robot robot = new Robot();
@@ -73,7 +75,7 @@ public class InventoryHistoryMapper {
 		e.setRobot(robot);
 
 		Product product = new Product();
-		product.setCode(r.getProductCode());
+		product.setCode(r.getProductCode()); // поле запроса у тебя называется productCode — ок
 		e.setProduct(product);
 
 		e.setQuantity(r.getQuantity());
@@ -82,48 +84,44 @@ public class InventoryHistoryMapper {
 		e.setShelfNumber(r.getShelfNumber());
 		e.setStatus(r.getStatus());
 		e.setScannedAt(r.getScannedAt());
-
 		return e;
 	}
 
-	public InventoryHistory toEntity(InventoryHistoryUpdateRequest request) {
+	public InventoryHistory toEntity(InventoryHistoryUpdateRequest r) {
+		if (r == null) return null;
 
-		if (request == null) return null;
-
-		InventoryHistory entity = new InventoryHistory();
+		InventoryHistory e = new InventoryHistory();
 
 		Robot robot = new Robot();
-		robot.setCode(request.getRobotCode());
-		entity.setRobot(robot);
+		robot.setCode(r.getRobotCode());
+		e.setRobot(robot);
 
 		Product product = new Product();
-		product.setCode(request.getProductCode());
-		entity.setProduct(product);
+		product.setCode(r.getProductCode()); // аналогично
+		e.setProduct(product);
 
-		entity.setQuantity(request.getQuantity());
-		entity.setZone(request.getZone());
-		entity.setRowNumber(request.getRowNumber());
-		entity.setShelfNumber(request.getShelfNumber());
-		entity.setStatus(request.getStatus());
-		entity.setScannedAt(request.getScannedAt());
-		return entity;
+		e.setQuantity(r.getQuantity());
+		e.setZone(r.getZone());
+		e.setRowNumber(r.getRowNumber());
+		e.setShelfNumber(r.getShelfNumber());
+		e.setStatus(r.getStatus());
+		e.setScannedAt(r.getScannedAt());
+		return e;
 	}
 
 	public List<InventoryHistory> toEntityList(List<InventoryHistoryDTO> dtos) {
 		if (dtos == null) return List.of();
-		return dtos.stream()
-				.map(this::toEntity)
-				.collect(Collectors.toList());
+		return dtos.stream().map(this::toEntity).collect(Collectors.toList());
 	}
-
 
 	private Robot findRobot(String code) {
 		if (code == null) return null;
 		return robotService.findByCode(code);
 	}
 
-	private Product findProduct(String code) {
-		if (code == null) return null;
-		return productService.findByCode(code);
+	private Product findProductBySku(String skuCode) { // явное имя для читаемости
+		if (skuCode == null) return null;
+		return productService.findByCode(skuCode); // сервис ищет по коду товара (sku_code)
 	}
 }
+

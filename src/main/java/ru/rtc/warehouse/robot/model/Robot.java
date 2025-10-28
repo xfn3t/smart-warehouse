@@ -35,5 +35,4 @@ public class Robot {
 
 	private Integer currentRow;
 	private Integer currentShelf;
-
 }

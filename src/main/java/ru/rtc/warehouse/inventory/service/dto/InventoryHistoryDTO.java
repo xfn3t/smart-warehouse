@@ -13,8 +13,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class InventoryHistoryDTO {
 	private Long id;
-	private String robot;
-	private String product;
+	private String robotCode;
+	private String skuCode;
+	private String productName;
 	private Integer quantity;
 	private String zone;
 	private Integer rowNumber;

@@ -31,5 +31,4 @@ public class Product {
 
 	@Column(nullable = false)
 	private Integer optimalStock = 100;
-
 }
