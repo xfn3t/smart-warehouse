@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.List;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -26,9 +27,11 @@ public class RobotDataRequest {
     @NotNull
     private Instant timestamp;
 
+    @Valid
     @NotNull
     private LocationDTO location;
 
+    @Valid
     @NotNull
     @Size(min = 1)
     private List<ScanResultDTO> scanResults;

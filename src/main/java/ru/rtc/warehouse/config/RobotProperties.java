@@ -10,8 +10,11 @@ import org.springframework.stereotype.Component;
 public class RobotProperties {
     private String recentScansKeyTemplate = "robot:%s:recent_scans";
     private String redisChannel = "ws:robot_updates";
+
     private String wsGlobalTopic = "/topic/dashboard";
-    private String wsRobotTopicPrefix = "/topic/robot";
+    private String wsRobotTopicPrefix = "/topic/dashboard/robot";
+    private String wsWarehouseTopicPrefix = "/topic/dashboard/warehouse";
+
     private int recentScansLimit = 5;
     private long heartbeatMillis = 5000;
     private long recentScansTtlDays = 7L;

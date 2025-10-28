@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
+
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
+
 
 
 @Getter

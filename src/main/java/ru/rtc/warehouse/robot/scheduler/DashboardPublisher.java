@@ -22,10 +22,9 @@ public class DashboardPublisher {
     private final RobotRepository robotRepository;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
     private final RobotProperties robotProperties;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new ObjectMapper();
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper; 
 
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
 
     @Scheduled(fixedRateString = "${warehouse.robot.heartbeat-millis}")
     @Transactional(readOnly = true)
@@ -34,6 +33,11 @@ public class DashboardPublisher {
             List<Robot> robots = robotRepository.findAll();
             for (Robot robot : robots) {
                 try {
+                    if (robot.isDeleted()) continue;
+                    if (robot.getWarehouse() == null) {
+                        log.warn("Skipping robot {} without warehouse", robot.getCode());
+                        continue;
+                    }
                     publishForRobot(robot);
                 } catch (Exception e) {
                     log.warn("Failed to publish heartbeat for robot {}: {}", robot.getCode(), e.getMessage());
@@ -47,16 +51,14 @@ public class DashboardPublisher {
 
     private void publishForRobot(Robot robot) throws Exception {
         String redisKey = String.format(robotProperties.getRecentScansKeyTemplate(), robot.getCode());
-      
+
         List<String> raw = redisTemplate.opsForList().range(redisKey, -robotProperties.getRecentScansLimit(), -1);
         List<Map<String,Object>> recentScans = new ArrayList<>();
         if (raw != null && !raw.isEmpty()) {
-           
             for (String s : raw) {
                 Map<String,Object> m = objectMapper.readValue(s, new TypeReference<Map<String,Object>>() {});
                 recentScans.add(m);
             }
-           
             Collections.reverse(recentScans);
         }
 
@@ -71,11 +73,10 @@ public class DashboardPublisher {
         data.put("next_checkpoint", null);
         data.put("timestamp", Objects.toString(robot.getLastUpdate(), ""));
         data.put("recent_scans", recentScans);
+
         wsPayload.put("data", data);
 
         String json = objectMapper.writeValueAsString(wsPayload);
-        
         redisTemplate.convertAndSend(robotProperties.getRedisChannel(), json);
     }
 }
-

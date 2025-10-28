@@ -7,7 +7,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
 
 
 @Getter
@@ -18,14 +17,14 @@ public class RobotUpdateRequest {
 	@Pattern(regexp = "RB-\\d{4}", message = "Code must follow pattern RB-XXXХ")
 	private String code;
 
-	private RobotStatus status;
+	private String status;
 
 	@Min(value = 0, message = "Battery level must be between 0 and 100")
 	@Max(value = 100, message = "Battery level must be between 0 and 100")
 	private Integer batteryLevel;
 
-	@Size(max = 10, message = "Zone code must not exceed 10 characters")
-	private String currentZone;
+	@PositiveOrZero(message = "Zone must be non-negative")
+	private Integer currentZone;
 
 	@PositiveOrZero(message = "Row must be non-negative")
 	private Integer currentRow;

@@ -11,7 +11,7 @@ class RobotEmulator:
         self.robot_id = robot_id
         self.api_url = api_url.rstrip("/")
         self.battery = 100.0
-        self.current_zone = 'A'
+        self.current_zone = 1
         self.current_row = 1
         self.current_shelf = 1
 
@@ -54,9 +54,9 @@ class RobotEmulator:
             if self.current_row > 20:
                 self.current_row = 1
                 # Переход к следующей зоне
-                self.current_zone = chr(ord(self.current_zone) + 1)
-                if ord(self.current_zone) > ord('E'):
-                    self.current_zone = 'A'
+                self.current_zone += 1
+                if self.current_zone > 5:
+                    self.current_zone = 1
         # Расход батареи
         self.battery -= random.uniform(0.1, 0.5)
         if self.battery < 20:

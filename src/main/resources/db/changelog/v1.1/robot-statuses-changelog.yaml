@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-robot-statuses
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: robot_status
+      changes:
+        - createTable:
+            tableName: robot_status
+            remarks: Статусы роботов
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+
+        - insert:
+            tableName: robot_status
+            columns:
+              - column:
+                  name: code
+                  value: IDLE
+
+        - insert:
+            tableName: robot_status
+            columns:
+              - column:
+                  name: code
+                  value: WORKING
+        - insert:
+            tableName: robot_status
+            columns:
+              - column:
+                  name: code
+                  value: CHARGING
+        - insert:
+            tableName: robot_status
+            columns:
+              - column:
+                  name: code
+                  value: ERROR

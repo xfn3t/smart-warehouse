@@ -1,8 +1,25 @@
 package ru.rtc.warehouse.user.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ru.rtc.warehouse.warehouse.model.Warehouse;
+
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -21,21 +38,28 @@ public class User {
 	private String email;
 
 	@Column(name = "password_hash", nullable = false, length = 255)
-	private String passwordHash;
+	private String password;
 
 	@Column(nullable = false, length = 255)
 	private String name;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 50)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "role_id", nullable = false)
 	private Role role;
 
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(
+			name = "user_warehouses",
+			joinColumns = @JoinColumn(name = "user_id"),
+			inverseJoinColumns = @JoinColumn(name = "warehouse_id")
+	)
+	private Set<Warehouse> warehouses;
+
+	@Builder.Default
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
+
+	@Builder.Default
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt = LocalDateTime.now();
-
-	public enum Role {
-		OPERATOR,
-		ADMIN,
-		VIEWER
-	}
 }

@@ -16,6 +16,10 @@ spring:
     host: ${SPRING_REDIS_HOST}
     port: ${SPRING_REDIS_PORT}
 
+  liquibase:
+    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    enabled: true
+
 server:
   port: ${APP_PORT}
 
@@ -35,7 +39,8 @@ warehouse:
     recent-scans-key-template: "robot:%s:recent_scans"
     redis-channel: "ws:robot_updates"
     ws-global-topic: "/topic/dashboard"
-    ws-robot-topic-prefix: "/topic/robot"
+    ws-robot-topic-prefix: "/topic/dashboard/robot"
+    ws-warehouse-topic-prefix: "/topic/dashboard/warehouse"
     recent-scans-limit: 5
     heartbeat-millis: 5000
     recent-scans-ttl-days: 7

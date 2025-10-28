@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,15 +23,15 @@ public class InventoryHistoryCreateRequest {
 	private Integer quantity;
 
 	@NotNull(message = "Zone is required")
-	@Size(min = 1, max = 10, message = "Zone must be between 1 and 10 characters")
-	private String zone;
+	@Size(min = 1, max = 100, message = "Zone must be between 1 and 10 characters")
+	private Integer zone;
 
 	private Integer rowNumber;
 
 	private Integer shelfNumber;
 
 	@NotNull(message = "Status is required")
-	private InventoryHistoryStatus status;
+	private String status;
 
 	@NotNull(message = "Scanned at date is required")
 	private LocalDateTime scannedAt;
