@@ -2,10 +2,15 @@ spring:
   application:
     name: warehouse
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    # 1) Если задан SPRING_DATASOURCE_URL — используем его.
+    # 2) Иначе соберём URL из DB_HOST/DB_PORT (если есть) или дефолтов localhost:5433.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${POSTGRES_DB:smart_warehouse}?sslmode=disable}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
     driver-class-name: org.postgresql.Driver
+  profiles:
+    default: dev
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -13,11 +18,14 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   redis:
-    host: ${SPRING_REDIS_HOST}
-    port: ${SPRING_REDIS_PORT}
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    lettuce:
+      pool:
+        enabled: true
 
 server:
-  port: ${APP_PORT}
+  port: ${APP_PORT:8080}
 
 security:
   jwt:
@@ -29,3 +37,11 @@ logging:
   level:
     root: INFO
     org.springframework.web: DEBUG
+
+app:
+  dashboard:
+    # Базовая таймзона для "сегодня" (перезаписывается query-параметром timezone в GET /api/realtime/stats)
+    timezone: Europe/Moscow
+    ttl:
+      minute-series-seconds: 4000      # ~66 минут для поминутной серии
+      checked-day-days: 3              # ежедневно – хранить 3 дня
