@@ -2,7 +2,8 @@ package ru.rtc.warehouse.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,11 +15,15 @@ import ru.rtc.warehouse.auth.repository.RefreshTokenRepository;
 import ru.rtc.warehouse.auth.util.JwtUtil;
 import ru.rtc.warehouse.user.controller.dto.request.UserCreateRequest;
 import ru.rtc.warehouse.user.mapper.UserMapper;
+import ru.rtc.warehouse.user.model.Role.RoleCode;
 import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.UserService;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +39,6 @@ public class AuthService {
 	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
 	private long refreshTokenValiditySeconds; // default 14 days
 
-
 	public AuthResponse login(String email, String password) {
 		Authentication auth = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(email, password)
@@ -43,19 +47,21 @@ public class AuthService {
 		var userDetails = (UserDetailsImpl) auth.getPrincipal();
 		User user = userDetails.getUser();
 
+		refreshTokenRepository.deleteAllByUser(user);
+
 		String accessToken = createAccessToken(user);
 		RefreshToken refreshToken = createAndSaveRefreshToken(user);
 
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil == null ? 0 : jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime()/1000)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", user.getRole().getCode());
+		claims.put("roles", List.of(user.getRole().getCode()));
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -81,16 +87,14 @@ public class AuthService {
 
 		User user = refreshToken.getUser();
 
-		refreshToken.setRevoked(true);
-		refreshTokenRepository.save(refreshToken);
-
+		refreshTokenRepository.deleteAllByUser(user);
 		RefreshToken newRefresh = createAndSaveRefreshToken(user);
 		String accessToken = createAccessToken(user);
 
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(newRefresh.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil == null ? 0 : jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime()/1000)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 
@@ -102,12 +106,20 @@ public class AuthService {
 	}
 
 	public AuthResponse register(RegisterRequest request) {
+		RoleCode role = null;
+		if (request.getRole() != null && !request.getRole().isBlank()) {
+			try {
+				role = RoleCode.valueOf(request.getRole().toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new RuntimeException("Invalid role: " + request.getRole());
+			}
+		}
 
 		UserCreateRequest createRequest = UserCreateRequest.builder()
 				.email(request.getEmail())
 				.name(request.getName())
 				.password(passwordEncoder.encode(request.getPassword()))
-				.role(request.getRole() != null ? request.getRole() : null)
+				.role(role != null ? role.toString() : null)
 				.build();
 
 		User user = userMapper.toEntity(userService.save(createRequest));
@@ -118,9 +130,7 @@ public class AuthService {
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(
-						jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime() / 1000
-				)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 }
