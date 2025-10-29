@@ -6,7 +6,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import joblib
 
-df = pd.read_csv("inventory_training_data.csv", sep=";")
+df = pd.read_csv("training_dataset.csv", sep=";")
 
 X = df[["category", "current_stock", "avg_daily_sales", "min_stock", "optimal_stock", "seasonal_factor"]]
 y = df["predicted_stock_7d"]
