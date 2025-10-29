@@ -7,6 +7,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.auth.controller.dto.request.RegisterRequest;
 import ru.rtc.warehouse.auth.controller.dto.response.AuthResponse;
@@ -39,6 +40,7 @@ public class AuthService {
 	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
 	private long refreshTokenValiditySeconds; // default 14 days
 
+	@Transactional
 	public AuthResponse login(String email, String password) {
 		Authentication auth = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(email, password)
@@ -62,6 +64,8 @@ public class AuthService {
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("roles", List.of(user.getRole().getCode()));
+		claims.put("userId", user.getId());
+		claims.put("name", user.getName());
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -77,6 +81,7 @@ public class AuthService {
 		return refreshTokenRepository.save(rt);
 	}
 
+	@Transactional
 	public AuthResponse refreshAccessToken(String refreshTokenString) {
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
 				.orElseThrow(() -> new RuntimeException("Invalid refresh token"));
@@ -98,6 +103,7 @@ public class AuthService {
 				.build();
 	}
 
+	@Transactional
 	public void logout(String refreshToken) {
 		refreshTokenRepository.findByToken(refreshToken).ifPresent(rt -> {
 			rt.setRevoked(true);
@@ -105,6 +111,7 @@ public class AuthService {
 		});
 	}
 
+	@Transactional
 	public AuthResponse register(RegisterRequest request) {
 		RoleCode role = null;
 		if (request.getRole() != null && !request.getRole().isBlank()) {
