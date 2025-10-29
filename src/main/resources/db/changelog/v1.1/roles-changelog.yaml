@@ -23,11 +23,6 @@ databaseChangeLog:
                     unique: true
                     nullable: false
               - column:
-                  name: name
-                  type: VARCHAR(100)
-                  constraints:
-                    nullable: false
-              - column:
                   name: is_deleted
                   type: BOOLEAN
                   defaultValueBoolean: false
@@ -38,24 +33,15 @@ databaseChangeLog:
               - column:
                   name: code
                   value: ADMIN
-              - column:
-                  name: name
-                  value: Администратор
         - insert:
             tableName: roles
             columns:
               - column:
                   name: code
                   value: OPERATOR
-              - column:
-                  name: name
-                  value: Оператор
         - insert:
             tableName: roles
             columns:
               - column:
                   name: code
                   value: VIEWER
-              - column:
-                  name: name
-                  value: Просмотр

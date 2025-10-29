@@ -45,5 +45,11 @@ databaseChangeLog:
       file: v1.0/refresh-tokens-changelog.yaml
       relativeToChangelogFile: true
   - include:
+      file: v1.2/create-robot-tokens-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.2/create-role-robot-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
       file: v1.1/error-logs-changelog.yaml
       relativeToChangelogFile: true

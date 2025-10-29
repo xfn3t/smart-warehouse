@@ -44,6 +44,18 @@ public class JwtUtil {
 				.compact();
 	}
 
+	public String generatePermanentToken(String subject, Map<String, Object> claims) {
+		Instant now = Instant.now();
+		return Jwts.builder()
+				.setClaims(claims)
+				.setSubject(subject)
+				.setIssuedAt(Date.from(now))
+				// без .setExpiration() - бессрочный
+				.signWith(key, SignatureAlgorithm.HS256)
+				.compact();
+	}
+
+
 	public Jws<Claims> parseAndValidate(String token) throws JwtException {
 		return Jwts.parserBuilder()
 				.setSigningKey(key)
@@ -53,12 +65,15 @@ public class JwtUtil {
 
 	public boolean isTokenExpired(String token) {
 		try {
-			Date exp = parseAndValidate(token).getBody().getExpiration();
-			return exp.before(new Date());
+			Claims claims = parseAndValidate(token).getBody();
+			Date exp = claims.getExpiration();
+			// если exp == null, токен бессрочный
+			return exp != null && exp.before(new Date());
 		} catch (JwtException e) {
 			return true;
 		}
 	}
+
 
 	public String getSubject(String token) {
 		return parseAndValidate(token).getBody().getSubject();

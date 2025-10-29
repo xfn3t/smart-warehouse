@@ -32,6 +32,7 @@ public class Role {
 		VIEWER,
 		ADMIN,
 		MANAGER,
-		OPERATOR
+		OPERATOR,
+		ROBOT
 	}
 }
