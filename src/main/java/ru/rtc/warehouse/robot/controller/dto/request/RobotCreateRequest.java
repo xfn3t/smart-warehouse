@@ -2,7 +2,6 @@ package ru.rtc.warehouse.robot.controller.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.robot.model.RobotStatus;
 
 import javax.validation.constraints.*;
 
@@ -22,7 +21,7 @@ public class RobotCreateRequest {
 	private Integer batteryLevel;
 
 	@Size(max = 10, message = "Zone code must not exceed 10 characters")
-	private String currentZone;
+	private Integer currentZone;
 
 	@PositiveOrZero(message = "Row must be non-negative")
 	private Integer currentRow;

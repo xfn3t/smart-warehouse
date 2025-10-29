@@ -7,11 +7,21 @@ databaseChangeLog:
   - include:
       file: v1.1/roles-changelog.yaml
       relativeToChangelogFile: true
+
   - include:
       file: v1.1/warehouses-changelog.yaml
       relativeToChangelogFile: true
   - include:
+      file: v1.1/location-statuses-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/location-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
       file: v1.1/users-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/user-warehouses-changelog.yaml
       relativeToChangelogFile: true
   - include:
       file: v1.1/robot-statuses-changelog.yaml

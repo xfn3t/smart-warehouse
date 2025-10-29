@@ -48,7 +48,7 @@ public class RobotServiceImpl implements RobotService {
 		String code = updateRequest.getCode();
 		String status = updateRequest.getStatus();
 		Integer batteryLevel = updateRequest.getBatteryLevel();
-		String currentZone = updateRequest.getCurrentZone();
+		Integer currentZone = updateRequest.getCurrentZone();
 		Integer currentRow = updateRequest.getCurrentRow();
 		Integer currentShelf = updateRequest.getCurrentShelf();
 
@@ -57,18 +57,20 @@ public class RobotServiceImpl implements RobotService {
 		}
 		if (status != null) {
 			robot.setStatus(robotStatusService.findByCode(StatusCode.from(status)));
+		} else {
+			robot.setStatus(robotStatusService.findByCode(StatusCode.IDLE));
 		}
 		if (batteryLevel != null) {
 			robot.setBatteryLevel(batteryLevel);
 		}
 		if (currentZone != null) {
-			robot.setCurrentZone(currentZone);
+			robot.getLocation().setZone(currentZone);
 		}
 		if (currentRow != null) {
-			robot.setCurrentRow(currentRow);
+			robot.getLocation().setRow(currentRow);
 		}
 		if (currentShelf != null) {
-			robot.setCurrentShelf(currentShelf);
+			robot.getLocation().setShelf(currentShelf);
 		}
 
 		robot.setLastUpdate(LocalDateTime.now());

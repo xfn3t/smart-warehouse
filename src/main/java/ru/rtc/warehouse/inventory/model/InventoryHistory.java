@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
@@ -49,11 +50,9 @@ public class InventoryHistory {
 	@JoinColumn(name = "product_id")
 	private Product product;
 
-	@Column(nullable = false)
-	private Integer zone;
-
-	private Integer rowNumber;
-	private Integer shelfNumber;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "location_id", nullable = false)
+	private Location location;
 
 	private Integer expectedQuantity;
 	private Integer quantity;

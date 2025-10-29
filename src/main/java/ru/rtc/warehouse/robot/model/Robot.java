@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
@@ -48,11 +49,9 @@ public class Robot {
 	@Column(name = "last_update")
 	private LocalDateTime lastUpdate;
 
-	@Column(name = "current_zone", length = 10)
-	private String currentZone;
-
-	private Integer currentRow;
-	private Integer currentShelf;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "location_id", nullable = false)
+	private Location location;
 
 	@Column(name = "is_deleted", nullable = false)
 	private boolean isDeleted = false;
