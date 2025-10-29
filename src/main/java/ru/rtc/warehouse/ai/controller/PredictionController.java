@@ -1,24 +1,23 @@
-package ru.rtc.warehouse.ai.controller.dto;
+package ru.rtc.warehouse.ai.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import ru.rtc.warehouse.ai.controller.dto.request.StockControllerRequest;
+import org.springframework.web.bind.annotation.*;
 import ru.rtc.warehouse.ai.service.PredictionService;
-import ru.rtc.warehouse.ai.service.feign.dto.response.PredictionResponse;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
+@RequestMapping("/api/predict")
 @RequiredArgsConstructor
 public class PredictionController {
 
 	private final PredictionService predictionService;
 
-	@PostMapping("/predict")
-	public PredictionResponse predict(@RequestBody List<StockControllerRequest> request) {
-		return predictionService.getPrediction(request);
+	@GetMapping("/{productId}")
+	public Map<String, Object> predict(
+			@PathVariable Long productId,
+			@RequestParam(defaultValue = "7") int horizon
+	) {
+		return predictionService.predictStock(productId, horizon);
 	}
 }

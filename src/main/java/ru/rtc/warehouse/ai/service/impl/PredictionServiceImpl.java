@@ -2,37 +2,21 @@ package ru.rtc.warehouse.ai.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.rtc.warehouse.ai.controller.dto.request.StockControllerRequest;
-import ru.rtc.warehouse.ai.service.InventoryHistoryAdapter;
+import ru.rtc.warehouse.ai.service.InventoryDataAggregationService;
 import ru.rtc.warehouse.ai.service.PredictionService;
 import ru.rtc.warehouse.ai.service.feign.PredictionClient;
-import ru.rtc.warehouse.ai.service.feign.dto.request.StockRequest;
-import ru.rtc.warehouse.ai.service.feign.dto.response.PredictionResponse;
 
-import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class PredictionServiceImpl implements PredictionService {
 
+	private final InventoryDataAggregationService aggregationService;
 	private final PredictionClient predictionClient;
-	private final InventoryHistoryAdapter ihAdapter;
 
-	public PredictionResponse getPrediction(List<StockControllerRequest> controllerRequests) {
-
-		List<StockRequest> requests = controllerRequests.stream()
-				.map(controllerRequest -> StockRequest.builder()
-						.category(controllerRequest.getCategory())
-						.current_stock(controllerRequest.getCurrentStock())
-						.avg_daily_sales(ihAdapter.avgDailySales().doubleValue())
-						.min_stock(controllerRequest.getMinStock())
-						.optimal_stock(controllerRequest.getOptimalStock())
-						.seasonal_factor(ihAdapter.seasonalFactor().doubleValue())
-						.build()
-				)
-				.toList();
-
-
-		return predictionClient.predict(requests);
+	public Map<String, Object> predictStock(Long productId, int horizonDays) {
+		Map<String, Object> featureSet = aggregationService.buildFeatureSet(productId, horizonDays);
+		return predictionClient.predict(featureSet);
 	}
 }
