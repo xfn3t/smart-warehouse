@@ -1,8 +1,20 @@
 package ru.rtc.warehouse.robot.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 
@@ -22,17 +34,26 @@ public class Robot {
 	@Column(name = "robot_code", length = 50, nullable = false, unique = true)
 	private String code;
 
-	@Enumerated(EnumType.STRING)
-	@Column(length = 50, nullable = false)
-	private RobotStatus status = RobotStatus.ACTIVE;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "warehouse_id", nullable = false)
+	private Warehouse warehouse;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "status_id", nullable = false)
+	private RobotStatus status;
+
+	@Column(name = "battery_level")
 	private Integer batteryLevel;
 
+	@Column(name = "last_update")
 	private LocalDateTime lastUpdate;
 
-	@Column(length = 10)
+	@Column(name = "current_zone", length = 10)
 	private String currentZone;
 
 	private Integer currentRow;
 	private Integer currentShelf;
+
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
 }

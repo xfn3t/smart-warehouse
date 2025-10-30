@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
 
 
 import java.time.LocalDateTime;

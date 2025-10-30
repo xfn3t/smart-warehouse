@@ -17,6 +17,7 @@ import ru.rtc.warehouse.inventory.service.dto.HistorySummaryDTO;
 import ru.rtc.warehouse.inventory.util.QuickRangeResolver;
 
 import java.time.Instant;
+import java.time.ZoneId;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -44,7 +45,7 @@ public class InventoryHistorySummaryController {
 
         // применяем quick -> from/to
         if (rq != null && rq.getFrom() == null && rq.getTo() == null && rq.getQuick() != null) {
-            var zone = QuickRangeResolver.resolveZone(rq.getTimezone());
+            var zone = ZoneId.systemDefault(); // ← Исправлено: ZoneId вместо TimeZone
             var range = QuickRangeResolver.resolve(rq.getQuick(), zone);
             rq.setFrom(range[0]);
             rq.setTo(range[1]);

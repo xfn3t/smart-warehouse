@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,7 +24,9 @@ import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.inventory.util.QuickRangeResolver;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -102,7 +106,7 @@ public class InventoryHistoryQueryController {
         }
         // Диапазон дат: quick → from/to, если явные from/to не заданы
         if (rq != null && rq.getFrom() == null && rq.getTo() == null && rq.getQuick() != null) {
-            var zone = QuickRangeResolver.resolveZone(rq.getTimezone());
+            var zone = ZoneId.systemDefault(); // ← Исправлено: ZoneId вместо TimeZone
             var range = QuickRangeResolver.resolve(rq.getQuick(), zone); // [from; to) в UTC
             rq.setFrom(range[0]);
             rq.setTo(range[1]);

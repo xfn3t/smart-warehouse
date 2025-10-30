@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - include:
+      file: v1.1/enable-pgcrypto-extension-changelog.yaml
+      relativeToChangelogFile: true
+
+
+  - include:
+      file: v1.1/roles-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/warehouses-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/users-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/robot-statuses-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/robots-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/products-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/inventory-statuses-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/inventory-history-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/ai-predictions-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.0/refresh-tokens-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.1/error-logs-changelog.yaml
+      relativeToChangelogFile: true

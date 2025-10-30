@@ -31,11 +31,4 @@ public final class QuickRangeResolver {
             }
         };
     }
-
-
-    /** Разрешает IANA таймзону; по умолчанию UTC. */
-    public static ZoneId resolveZone(String tz) {
-        if (tz == null || tz.isBlank()) return ZoneOffset.UTC;
-        try { return ZoneId.of(tz); } catch (Exception e) { return ZoneOffset.UTC; }
-    }
 }

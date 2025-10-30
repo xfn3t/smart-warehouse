@@ -16,6 +16,7 @@ import ru.rtc.warehouse.user.controller.dto.request.UserCreateRequest;
 import ru.rtc.warehouse.user.mapper.UserMapper;
 import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.UserService;
+import ru.rtc.warehouse.user.service.dto.UserDTO;
 
 import java.time.Instant;
 import java.util.*;
@@ -33,7 +34,6 @@ public class AuthService {
 
 	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
 	private long refreshTokenValiditySeconds; // default 14 days
-
 
 	public AuthResponse login(String email, String password) {
 		Authentication auth = authenticationManager.authenticate(
@@ -55,7 +55,7 @@ public class AuthService {
 
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", user.getRole().name());
+		claims.put("roles", user.getRole().getCode());
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -102,15 +102,18 @@ public class AuthService {
 	}
 
 	public AuthResponse register(RegisterRequest request) {
-
 		UserCreateRequest createRequest = UserCreateRequest.builder()
 				.email(request.getEmail())
 				.name(request.getName())
 				.password(passwordEncoder.encode(request.getPassword()))
-				.role(request.getRole() != null ? request.getRole().name() : null)
+				.role(request.getRole())
 				.build();
 
-		User user = userMapper.toEntity(userService.save(createRequest));
+		// Сохраняем пользователя и получаем UserDTO
+		UserDTO userDTO = userService.save(createRequest);
+
+		// Преобразуем UserDTO обратно в User entity для создания токена
+		User user = userMapper.toEntity(userDTO);
 
 		String accessToken = createAccessToken(user);
 		RefreshToken refreshToken = createAndSaveRefreshToken(user);

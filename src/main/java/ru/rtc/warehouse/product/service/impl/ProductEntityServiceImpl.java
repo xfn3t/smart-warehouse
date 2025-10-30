@@ -43,7 +43,7 @@ public class ProductEntityServiceImpl implements ProductEntityService {
 
 	@Override
 	public Product findByCode(String code) {
-		return productRepository.findByCode(code)
+		return productRepository.findByCodeAndIsDeletedFalse(code)
 				.orElseThrow(() -> new NotFoundException("Product not found"));
 	}
 }

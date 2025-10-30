@@ -24,6 +24,10 @@ spring:
       pool:
         enabled: true
 
+  liquibase:
+    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    enabled: true
+
 server:
   port: ${APP_PORT:8080}
 
@@ -40,8 +44,6 @@ logging:
 
 app:
   dashboard:
-    # Базовая таймзона для "сегодня" (перезаписывается query-параметром timezone в GET /api/realtime/stats)
-    timezone: Europe/Moscow
     ttl:
       minute-series-seconds: 4000      # ~66 минут для поминутной серии
       checked-day-days: 3              # ежедневно – хранить 3 дня

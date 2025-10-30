@@ -11,6 +11,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 
 /**
  * Репозиторий истории инвентаризаций с поддержкой Specifications.
@@ -19,6 +23,9 @@ import ru.rtc.warehouse.inventory.model.InventoryHistory;
 public interface InventoryHistoryRepository extends
         JpaRepository<InventoryHistory, Long>, JpaSpecificationExecutor<InventoryHistory> {
 
-    @EntityGraph(attributePaths = {"product", "robot"})
+    @Override @EntityGraph(attributePaths = {"product", "robot"})
     Page<InventoryHistory> findAll(@Nullable Specification<InventoryHistory> spec, Pageable pageable);
+
+    List<InventoryHistory> findByScannedAtBetween(LocalDateTime from, LocalDateTime to);
+    Optional<InventoryHistory> findTopByOrderByScannedAtDesc();
 }

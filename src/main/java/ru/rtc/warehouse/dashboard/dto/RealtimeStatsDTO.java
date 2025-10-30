@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -36,8 +37,8 @@ public class RealtimeStatsDTO {
     @Schema(description = "Серия активности за последний час (по минутам)")
     private List<ActivityPoint> activitySeries;
 
-    @Schema(description = "Момент формирования ответа (UTC)")
-    private Instant serverTimeUtc;
+    @Schema(description = "Момент формирования ответа")
+    private LocalDateTime serverTime;
 
     /**
      * Точка временного ряда активности.
@@ -50,8 +51,8 @@ public class RealtimeStatsDTO {
     @Builder
     public static class ActivityPoint {
 
-        @Schema(description = "Начало минуты в UTC", example = "2025-10-25T12:34:00Z")
-        private Instant ts;
+        @Schema(description = "Начало минуты (локальное)", example = "2025-10-25T15:34:00")
+        private LocalDateTime ts;
 
         @Schema(description = "Количество сканов за минуту", example = "5")
         private long count;

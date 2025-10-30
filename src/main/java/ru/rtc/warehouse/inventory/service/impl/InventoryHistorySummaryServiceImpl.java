@@ -2,11 +2,12 @@ package ru.rtc.warehouse.inventory.service.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
+import org.springframework.transaction.annotation.Transactional;
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.service.InventoryHistorySummaryService;
@@ -15,8 +16,19 @@ import ru.rtc.warehouse.inventory.spec.InventoryHistorySpecifications;
 
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Сводная статистика по истории инвентаризаций.
+ * <ul>
+ *   <li>total — количество записей</li>
+ *   <li>uniqueProducts — число уникальных SKU</li>
+ *   <li>discrepancies — количество записей со статусом != OK</li>
+ *   <li>avgZoneScanMinutes — среднее (created_at - scanned_at) в минутах (PostgreSQL)</li>
+ * </ul>
+ * Для avg используется нативный SQL из-за EXTRACT(EPOCH ...).
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryHistorySummaryServiceImpl implements InventoryHistorySummaryService {
@@ -24,23 +36,18 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
     private final EntityManager em;
 
     @Override
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(readOnly = true)
     public HistorySummaryDTO summarize(InventoryHistorySearchRequest rq) {
+        // null-safe: пустые фильтры допустимы
+        InventoryHistorySearchRequest request = (rq == null) ? new InventoryHistorySearchRequest() : rq;
 
-        // базовый предикат от наших спецификаций
-        Specification<InventoryHistory> spec = InventoryHistorySpecifications.build(rq);
+        // Единая спецификация для count'ов
+        Specification<InventoryHistory> spec = InventoryHistorySpecifications.build(request);
 
-        // total
-        long total = count(spec);
-
-        // unique products
-        long uniqueProducts = countDistinctProduct(spec);
-
-        // discrepancies: status != OK в рамках того же набора данных
-        long discrepancies = countWithStatusNotOk(spec);
-
-        // среднее время (мин) = avg(created_at - scanned_at) — Postgres-специфика
-        Double avgMinutes = avgMinutesNative(rq);
+        long total = safeCount(spec);
+        long uniqueProducts = safeCountDistinctProduct(spec);
+        long discrepancies = safeCountWithStatusNotOk(spec);
+        Double avgMinutes = avgMinutesNative(request);
 
         return HistorySummaryDTO.builder()
                 .total(total)
@@ -50,45 +57,69 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
                 .build();
     }
 
-    private long count(Specification<InventoryHistory> spec) {
+    /* =========================
+       Criteria-based counters
+       ========================= */
+
+    private long safeCount(Specification<InventoryHistory> spec) {
         var cb = em.getCriteriaBuilder();
         var cq = cb.createQuery(Long.class);
         var root = cq.from(InventoryHistory.class);
-        var p = spec.toPredicate(root, cq, cb);
+        var p = (spec == null) ? null : spec.toPredicate(root, cq, cb);
         cq.select(cb.count(root));
         if (p != null) cq.where(p);
-        return em.createQuery(cq).getSingleResult();
+        Long v = em.createQuery(cq).getSingleResult();
+        return v == null ? 0L : v;
     }
 
-    private long countDistinctProduct(Specification<InventoryHistory> spec) {
+    private long safeCountDistinctProduct(Specification<InventoryHistory> spec) {
         var cb = em.getCriteriaBuilder();
         var cq = cb.createQuery(Long.class);
         var root = cq.from(InventoryHistory.class);
-        var p = spec.toPredicate(root, cq, cb);
+        var p = (spec == null) ? null : spec.toPredicate(root, cq, cb);
         cq.select(cb.countDistinct(root.get("product")));
         if (p != null) cq.where(p);
-        return em.createQuery(cq).getSingleResult();
+        Long v = em.createQuery(cq).getSingleResult();
+        return v == null ? 0L : v;
     }
 
-    private long countWithStatusNotOk(Specification<InventoryHistory> spec) {
+    private long safeCountWithStatusNotOk(Specification<InventoryHistory> spec) {
         var cb = em.getCriteriaBuilder();
         var cq = cb.createQuery(Long.class);
         var root = cq.from(InventoryHistory.class);
-        var p = spec.toPredicate(root, cq, cb);
-        var notOk = cb.notEqual(root.get("status"), InventoryHistoryStatus.OK);
-        cq.select(cb.count(root)).where(p == null ? notOk : cb.and(p, notOk));
-        return em.createQuery(cq).getSingleResult();
+
+        // базовые фильтры из Specifications
+        var base = (spec == null) ? null : spec.toPredicate(root, cq, cb);
+
+        // join к статусу и сравнение по коду
+        var st = root.join("status", jakarta.persistence.criteria.JoinType.LEFT);
+        var notOk = cb.notEqual(
+                st.get("code"),
+                ru.rtc.warehouse.inventory.model.InventoryHistoryStatus.InventoryHistoryStatusCode.OK.name()
+        );
+
+        cq.select(cb.count(root));
+        cq.where(base == null ? notOk : cb.and(base, notOk));
+
+        Long v = em.createQuery(cq).getSingleResult();
+        return v == null ? 0L : v;
     }
+
+
+    /* =========================
+       Native AVG minutes (PostgreSQL)
+       ========================= */
 
     /**
      * Среднее по (created_at - scanned_at) в минутах.
-     * Реализовано нативно под Postgres: avg(extract(epoch from (created_at - scanned_at))/60.0)
-     * Фильтры те же, что и для поиска.
+     * Реализовано нативно под Postgres:
+     *   avg(extract(epoch from (ih.created_at - ih.scanned_at))/60.0)
+     * Фильтры синхронизированы с REST: from/to, zones, statuses, categories, q, robots.
      */
     private Double avgMinutesNative(InventoryHistorySearchRequest rq) {
         StringBuilder sql = new StringBuilder(
                 "select avg(extract(epoch from (ih.created_at - ih.scanned_at))/60.0) " +
-                        "from inventory_history ih where 1=1 ");
+                        "from inventory_history ih where 1=1");
 
         Map<String, Object> params = new HashMap<>();
 
@@ -108,11 +139,14 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
             params.put("zones", rq.getZones());
         }
 
-        // статусы (СПИСОК)
         if (rq.getStatuses() != null && !rq.getStatuses().isEmpty()) {
-            sql.append(" and ih.status in (:st)");
-            // передаём список строк, а не enum
-            params.put("st", rq.getStatuses().stream().map(Enum::name).toList());
+            List<String> statusNames = rq.getStatuses().stream()
+                    .map(ru.rtc.warehouse.inventory.model.InventoryHistoryStatus.InventoryHistoryStatusCode::name)
+                    .toList();
+
+            sql.append(" and exists (select 1 from inventory_status s " +
+                    "            where s.id = ih.status_id and s.code in (:st))");
+            params.put("st", statusNames);
         }
 
         // категории
@@ -121,13 +155,13 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
             params.put("cats", rq.getCategories());
         }
 
-        // q: product.sku_code OR product.name OR robot.robot_code
+        // q: p.sku_code OR p.name OR r.robot_code
         if (rq.getQ() != null && !rq.getQ().isBlank()) {
             sql.append(" and (exists (select 1 from products p " +
-                    "where p.id = ih.product_id " +
-                    "and (lower(p.sku_code) like :q or lower(p.name) like :q)) " +   // <-- sku_code
-                    "or exists (select 1 from robots r " +
-                    "where r.id = ih.robot_id and lower(r.robot_code) like :q))");
+                    "              where p.id = ih.product_id " +
+                    "                and (lower(p.sku_code) like :q or lower(p.name) like :q)) " +
+                    "       or exists (select 1 from robots r " +
+                    "              where r.id = ih.robot_id and lower(r.robot_code) like :q))");
             params.put("q", "%" + rq.getQ().toLowerCase() + "%");
         }
 
@@ -140,6 +174,6 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
         Query q = em.createNativeQuery(sql.toString());
         params.forEach(q::setParameter);
         Object v = q.getSingleResult();
-        return v == null ? null : ((Number) v).doubleValue();
+        return (v == null) ? null : ((Number) v).doubleValue();
     }
 }

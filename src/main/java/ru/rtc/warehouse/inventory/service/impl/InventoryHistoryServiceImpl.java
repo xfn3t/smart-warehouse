@@ -2,15 +2,13 @@ package ru.rtc.warehouse.inventory.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.rtc.warehouse.inventory.common.InventoryHistoryStatus;
+import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryCreateRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateRequest;
 import ru.rtc.warehouse.inventory.mapper.InventoryHistoryMapper;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
-import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
-import ru.rtc.warehouse.inventory.service.InventoryHistoryService;
-import ru.rtc.warehouse.inventory.service.ProductEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.RobotEntServiceAdapter;
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus.InventoryHistoryStatusCode;
+import ru.rtc.warehouse.inventory.service.*;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 
 import java.time.LocalDateTime;
@@ -21,6 +19,7 @@ import java.util.List;
 public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 
 	private final InventoryHistoryEntityService ihes;
+	private final InventoryHistoryStatusService ihss;
 	private final InventoryHistoryMapper ihMapper;
 
 	private final RobotEntServiceAdapter robotAdapter;
@@ -38,27 +37,30 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 		String robotCode = request.getRobotCode();
 		String productCode = request.getProductCode();
 		Integer quantity = request.getQuantity();
-		String zone = request.getZone();
+		Integer zone = request.getZone();
 		Integer rowNumber = request.getRowNumber();
 		Integer shelfNumber = request.getShelfNumber();
-		InventoryHistoryStatus status = request.getStatus();
+		InventoryHistoryStatusCode status = InventoryHistoryStatusCode.from(String.valueOf(request.getStatus()));
 		LocalDateTime scannedAt = request.getScannedAt();
 
 		if (robotCode != null) inventoryHistory.setRobot(robotAdapter.findByCode(robotCode));
 		if (productCode != null) inventoryHistory.setProduct(productAdapter.findByCode(productCode));
 		if (quantity != null) inventoryHistory.setQuantity(quantity);
 		if (zone != null) inventoryHistory.setZone(zone);
-		if (rowNumber != null) inventoryHistory.setShelfNumber(shelfNumber);
-		if (status != null) inventoryHistory.setStatus(status);
+		if (rowNumber != null) inventoryHistory.setRowNumber(rowNumber);
+		if (shelfNumber != null) inventoryHistory.setShelfNumber(shelfNumber);
+		if (status != null) inventoryHistory.setStatus(ihss.findByCode(status));
 		if (scannedAt != null) inventoryHistory.setScannedAt(scannedAt);
 
 		ihes.update(inventoryHistory);
 	}
 
+	@Transactional(readOnly = true)
 	public List<InventoryHistoryDTO> findAll() {
 		return ihMapper.toDtoList(ihes.findAll());
 	}
 
+	@Transactional(readOnly = true)
 	public InventoryHistoryDTO findById(Long id) {
 		return ihMapper.toDto(ihes.findById(id));
 	}

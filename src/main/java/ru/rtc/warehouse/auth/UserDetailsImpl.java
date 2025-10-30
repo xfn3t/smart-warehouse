@@ -15,9 +15,13 @@ public class UserDetailsImpl implements UserDetails {
 
 	private final User user;
 
+	// Временное изменение для обхода 403
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+		var role = user.getRole();
+		var code = (role != null ? role.getCode() : null);
+		if (code == null) return List.of();
+		return List.of(new SimpleGrantedAuthority("ROLE_" + code));
 	}
 
 	@Override

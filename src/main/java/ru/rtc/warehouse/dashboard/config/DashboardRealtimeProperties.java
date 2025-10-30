@@ -9,12 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "app.dashboard")
 public class DashboardRealtimeProperties {
-    /**
-     * Таймзона для вычисления "начала дня" при инкременте счётчика "проверено сегодня".
-     * Может быть переопределена параметром запроса при чтении (в контроллере).
-     */
-    private String timezone = "UTC";
-
     private Ttl ttl = new Ttl();
 
     @Getter @Setter

@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -44,7 +45,10 @@ public final class InventoryHistorySpecifications {
         }
 
         if (!CollectionUtils.isEmpty(rq.getStatuses())) {
-            spec = spec.and((root, cq, cb) -> root.get("status").in(rq.getStatuses()));
+            spec = spec.and((root, q, cb) -> {
+                var st = root.join("status", JoinType.LEFT); // сущность InventoryHistoryStatus
+                return st.get("code").in(rq.getStatuses());  // code — enum
+            });
         }
 
         // Категории (только product)

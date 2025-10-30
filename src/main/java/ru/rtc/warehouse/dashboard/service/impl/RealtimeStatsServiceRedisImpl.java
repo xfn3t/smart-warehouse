@@ -8,6 +8,7 @@ import ru.rtc.warehouse.dashboard.service.RealtimeStatsService;
 import ru.rtc.warehouse.dashboard.config.DashboardRealtimeProperties;
 import ru.rtc.warehouse.dashboard.dto.RealtimeStatsDTO;
 import ru.rtc.warehouse.dashboard.redis.RealtimeRedisKeys;
+import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 
 import java.sql.Timestamp;
 import java.time.*;
@@ -21,50 +22,40 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class RealtimeStatsServiceRedisImpl implements RealtimeStatsService {
-
     private final StringRedisTemplate rt;
     private final DashboardRealtimeProperties props;
 
     @Override
     @Transactional(readOnly = true)
-    public RealtimeStatsDTO getStats(String timezone) {
-        ZoneId zone = (timezone == null || timezone.isBlank())
-                ? ZoneId.of(props.getTimezone()) : ZoneId.of(timezone);
+    public RealtimeStatsDTO getStats() {
+        ZoneId zone = RealtimeRedisKeys.zone();
 
-        Instant now = Instant.now();
-        Instant toMinute = now.truncatedTo(ChronoUnit.MINUTES);
-        Instant fromHour = toMinute.minus(59, ChronoUnit.MINUTES); // 60 точек включая текущую
+        LocalDateTime toMinute = LocalDateTime.now(zone).truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime fromHour = toMinute.minusMinutes(59);
 
-        // Активные/всего роботов
-        long active = rt.opsForSet().size(RealtimeRedisKeys.robotsActive()) == null ? 0L
-                : rt.opsForSet().size(RealtimeRedisKeys.robotsActive());
-        long total = rt.opsForSet().size(RealtimeRedisKeys.robotsAll()) == null ? 0L
-                : rt.opsForSet().size(RealtimeRedisKeys.robotsAll());
+        long active = size(RealtimeRedisKeys.robotsActive());
+        long total  = size(RealtimeRedisKeys.robotsAll());
+        long criticalSkus = size(RealtimeRedisKeys.criticalSkuSet());
 
-        // Проверено сегодня (по указанной таймзоне в контроллере/конфиге)
-        LocalDate today = LocalDate.now(zone);
-        String dayKey = RealtimeRedisKeys.checkedToday(today);
-        long checkedToday = parseLong(rt.opsForValue().get(dayKey));
-
-        // Критические SKU по последним сканам
-        long criticalSkus = rt.opsForSet().size(RealtimeRedisKeys.criticalSkuSet()) == null ? 0L
-                : rt.opsForSet().size(RealtimeRedisKeys.criticalSkuSet());
-
-        // Средний заряд батарей
         long sum = parseLong(rt.opsForValue().get(RealtimeRedisKeys.batterySum()));
         long cnt = parseLong(rt.opsForValue().get(RealtimeRedisKeys.batteryCnt()));
         Double avgBattery = (cnt == 0L) ? null : (double) sum / cnt;
 
-        // Серия активности за последний час (60 точек)
+        // checkedToday по локальному дню сервера
+        long checkedToday = parseLong(rt.opsForValue().get(
+                RealtimeRedisKeys.checkedToday(LocalDate.now(zone))));
+
         List<RealtimeStatsDTO.ActivityPoint> series = new ArrayList<>(60);
-        Instant cur = fromHour;
+        LocalDateTime cur = fromHour;
         while (!cur.isAfter(toMinute)) {
             long epochMin = RealtimeRedisKeys.epochMinute(cur);
             String key = RealtimeRedisKeys.activityMinute(epochMin);
             long v = parseLong(rt.opsForValue().get(key));
             series.add(RealtimeStatsDTO.ActivityPoint.builder()
-                    .ts(cur).count(v).build());
-            cur = cur.plus(1, ChronoUnit.MINUTES);
+                    .ts(cur)     // LocalDateTime в локальной зоне сервера
+                    .count(v)
+                    .build());
+            cur = cur.plusMinutes(1);
         }
 
         return RealtimeStatsDTO.builder()
@@ -74,12 +65,10 @@ public class RealtimeStatsServiceRedisImpl implements RealtimeStatsService {
                 .criticalSkus(criticalSkus)
                 .avgBatteryPercent(avgBattery)
                 .activitySeries(series)
-                .serverTimeUtc(now)
+                .serverTime(LocalDateTime.now(zone))
                 .build();
     }
 
-    private long parseLong(String s) {
-        if (s == null || s.isBlank()) return 0L;
-        try { return Long.parseLong(s); } catch (NumberFormatException e) { return 0L; }
-    }
+    private long size(String key) { Long s = rt.opsForSet().size(key); return s == null ? 0L : s; }
+    private long parseLong(String s) { if (s == null || s.isBlank()) return 0L; try { return Long.parseLong(s); } catch (Exception e) { return 0L; } }
 }

@@ -9,5 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-	Optional<Product> findByCode(String code);
+	Optional<Product> findByCodeAndIsDeletedFalse(String code); // code = sku_code
 }
+

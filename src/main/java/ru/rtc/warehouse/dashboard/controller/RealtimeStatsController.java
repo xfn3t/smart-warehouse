@@ -28,8 +28,7 @@ public class RealtimeStatsController {
                             schema = @Schema(implementation = RealtimeStatsDTO.class)))
     )
     @GetMapping("/stats")
-    public ResponseEntity<RealtimeStatsDTO> stats(
-            @RequestParam(required = false, name = "timezone") String timezone) {
-        return ResponseEntity.ok(service.getStats(timezone));
+    public ResponseEntity<RealtimeStatsDTO> stats() {
+        return ResponseEntity.ok(service.getStats());
     }
 }
