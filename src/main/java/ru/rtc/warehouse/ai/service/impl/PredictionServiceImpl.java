@@ -7,7 +7,9 @@ import ru.rtc.warehouse.ai.service.PredictionService;
 import ru.rtc.warehouse.ai.service.feign.PredictionClient;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -32,8 +34,12 @@ public class PredictionServiceImpl implements PredictionService {
 		return featureSet;
 	}
 
-	public Map<String, Object> predictStock(String sku, String warehouseCode) {
-		Map<String, Object> featureSet = buildFeatureSet(sku, warehouseCode);
-		return predictionClient.predict(featureSet);
+	public Map<String, Object> predictStock(List<String> skus, String warehouseCode) {
+
+		List<Map<String, Object>> request = new ArrayList<>();
+		for (String sku : skus) {
+			request.add(buildFeatureSet(sku, warehouseCode));
+		}
+		return predictionClient.predict(request);
 	}
 }

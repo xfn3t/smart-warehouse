@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.rtc.warehouse.ai.service.PredictionService;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -13,10 +14,10 @@ public class PredictionController {
 
 	private final PredictionService predictionService;
 
-	@GetMapping("/{productId}")
+	@GetMapping
 	public Map<String, Object> predict(
 			@PathVariable String warehouseCode,
-			@RequestParam String sku
+			@RequestParam List<String> sku
 	) {
 		return predictionService.predictStock(sku, warehouseCode);
 	}
