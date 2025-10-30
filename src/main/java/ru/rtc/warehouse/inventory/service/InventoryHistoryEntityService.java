@@ -4,4 +4,5 @@ import ru.rtc.warehouse.common.CrudEntityService;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 
 public interface InventoryHistoryEntityService extends CrudEntityService<InventoryHistory, Long> {
+	InventoryHistory findByProductSKU(String sku, String warehouseCode);
 }

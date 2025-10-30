@@ -40,4 +40,10 @@ public class InventoryHistoryEntityServiceImpl implements InventoryHistoryEntity
 	public void delete(Long id) {
 		inventoryHistoryRepository.deleteById(id);
 	}
+
+	@Override
+	public InventoryHistory findByProductSKU(String sku, String warehouseCode) {
+		return inventoryHistoryRepository.findByProductSKU(sku, warehouseCode)
+				.orElseThrow(() -> new NotFoundException("Inventory history not found"));
+	}
 }
