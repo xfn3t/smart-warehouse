@@ -55,4 +55,13 @@ public interface InventoryHistoryRepository extends JpaRepository<InventoryHisto
     """)
 	List<InventoryHistory> findByProductAndPeriod(Long productId, LocalDateTime from, LocalDateTime to);
 
+	@Query("""
+			SELECT ih
+			FROM InventoryHistory ih
+			WHERE ih.product.code = :sku 
+			  AND ih.isDeleted = false
+			  AND ih.warehouse.code = :warehouseCode
+			ORDER BY ih.scannedAt ASC
+			""")
+	Optional<InventoryHistory> findByProductSKU(String sku, String warehouseCode);
 }

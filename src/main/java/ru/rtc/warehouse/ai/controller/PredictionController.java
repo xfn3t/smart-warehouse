@@ -7,7 +7,7 @@ import ru.rtc.warehouse.ai.service.PredictionService;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/predict")
+@RequestMapping("/api/{warehouseCode}/predict")
 @RequiredArgsConstructor
 public class PredictionController {
 
@@ -15,9 +15,9 @@ public class PredictionController {
 
 	@GetMapping("/{productId}")
 	public Map<String, Object> predict(
-			@PathVariable Long productId,
-			@RequestParam(defaultValue = "7") int horizon
+			@PathVariable String warehouseCode,
+			@RequestParam String sku
 	) {
-		return predictionService.predictStock(productId, horizon);
+		return predictionService.predictStock(sku, warehouseCode);
 	}
 }
