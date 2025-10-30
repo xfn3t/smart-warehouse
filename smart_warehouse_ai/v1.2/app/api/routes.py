@@ -35,7 +35,7 @@ def predict(req: list[PredictRequest]):
     Accepts list of products with sku and features.
     Returns prediction per product with criticality level.
     """
-    try:    
+    try:
         results = []
         for item in req:
             data = item.dict()
