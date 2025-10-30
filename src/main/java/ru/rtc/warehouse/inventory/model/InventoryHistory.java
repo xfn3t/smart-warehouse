@@ -1,14 +1,6 @@
 package ru.rtc.warehouse.inventory.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,6 +30,13 @@ public class InventoryHistory {
 	@Column(name = "message_id")
 	private UUID messageId;
 
+	@PrePersist
+	void ensureMessageId() {
+		if (messageId == null) {
+			messageId = UUID.randomUUID();
+		}
+	}
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "warehouse_id", nullable = false)
 	private Warehouse warehouse;
@@ -59,7 +58,7 @@ public class InventoryHistory {
 	private Integer difference;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "status_id")
+	@JoinColumn(name = "status_id", nullable = false)
 	private InventoryHistoryStatus status;
 
 	@Column(name = "scanned_at", nullable = false)

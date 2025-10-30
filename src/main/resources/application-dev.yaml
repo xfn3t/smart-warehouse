@@ -1,0 +1,20 @@
+spring:
+  main:
+    lazy-initialization: true   # быстрее старт в dev
+  devtools:
+    restart:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    persistAuthorization: true  # токен в Swagger сохраняется между перезапусками
+    tryItOutEnabled: true
+    displayRequestDuration: true
+    docExpansion: none
+
+# секция, которую ждёт JwtUtil
+security:
+  jwt:
+    # читаем из переменной окружения, а если её нет — берём безопасный дефолт
+    secret: ${JWT_SECRET:ZGV2LXNlY3JldC1jaGFuZ2UtbWUtYWRhZGEhITpBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQQ==}
+    access-ttl: PT24H

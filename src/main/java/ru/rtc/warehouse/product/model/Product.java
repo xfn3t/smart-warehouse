@@ -43,11 +43,14 @@ public class Product {
 	private String category;
 
 	@Column(name = "min_stock", nullable = false)
-	private Integer minStock;
+	@Builder.Default
+	private Integer minStock = 10;
 
 	@Column(name = "optimal_stock", nullable = false)
-	private Integer optimalStock;
+	@Builder.Default
+	private Integer optimalStock = 100;
 
 	@Column(name = "is_deleted", nullable = false)
+	@Builder.Default
 	private boolean isDeleted = false;
 }

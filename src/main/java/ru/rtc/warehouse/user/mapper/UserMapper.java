@@ -25,7 +25,7 @@ public interface UserMapper {
 	User toEntity(UserDTO dto);
 
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "role", source = "role", qualifiedByName = "mapStringToRole")
+	@Mapping(target = "role", ignore = true)
 	@Mapping(target = "warehouses", ignore = true)
 	@Mapping(target = "isDeleted", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)

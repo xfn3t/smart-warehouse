@@ -1,9 +1,10 @@
 package ru.rtc.warehouse.inventory.controller.dto.request;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 
 import java.time.LocalDateTime;
 
@@ -11,27 +12,30 @@ import java.time.LocalDateTime;
 @Setter
 public class InventoryHistoryCreateRequest {
 
-	@NotNull(message = "Robot ID is required")
+	@NotBlank(message = "Robot code is required")
+	@Size(max = 50)
 	private String robotCode;
 
-	@NotNull(message = "Product ID is required")
-	@Size(max = 50, message = "Product ID must not exceed 50 characters")
+	@NotBlank(message = "Product code (SKU) is required")
+	@Size(max = 50)
 	private String productCode;
 
-	@NotNull(message = "Quantity is required")
+	@NotNull @Min(0)
 	private Integer quantity;
 
-	@NotNull(message = "Zone is required")
-	@Size(min = 1, max = 100, message = "Zone must be between 1 and 10 characters")
+	@Min(0)
 	private Integer zone;
 
+	@Min(0)
 	private Integer rowNumber;
 
+	@Min(0)
 	private Integer shelfNumber;
 
-	@NotNull(message = "Status is required")
-	private String status;
+	@NotNull
+	@Schema(implementation = InventoryHistoryStatus.InventoryHistoryStatusCode.class, example = "OK")
+	private InventoryHistoryStatus.InventoryHistoryStatusCode status;
 
-	@NotNull(message = "Scanned at date is required")
+	@NotNull
 	private LocalDateTime scannedAt;
 }

@@ -3,8 +3,6 @@ package ru.rtc.warehouse.robot.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
 import lombok.*;
-import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
-import ru.rtc.warehouse.robot.common.StatusCodeConverter;
 
 @Entity
 @Table(name = "robot_status")

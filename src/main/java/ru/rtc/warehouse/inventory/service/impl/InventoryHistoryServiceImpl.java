@@ -40,7 +40,7 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 		Integer zone = request.getZone();
 		Integer rowNumber = request.getRowNumber();
 		Integer shelfNumber = request.getShelfNumber();
-		InventoryHistoryStatusCode status = InventoryHistoryStatusCode.from(request.getStatus());
+		InventoryHistoryStatusCode status = InventoryHistoryStatusCode.from(String.valueOf(request.getStatus()));
 		LocalDateTime scannedAt = request.getScannedAt();
 
 		if (robotCode != null) inventoryHistory.setRobot(robotAdapter.findByCode(robotCode));

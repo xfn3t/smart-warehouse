@@ -19,6 +19,7 @@ import ru.rtc.warehouse.user.mapper.UserMapper;
 import ru.rtc.warehouse.user.model.Role.RoleCode;
 import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.UserService;
+import ru.rtc.warehouse.user.service.dto.UserDTO;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -129,7 +130,11 @@ public class AuthService {
 				.role(role != null ? role.toString() : null)
 				.build();
 
-		User user = userMapper.toEntity(userService.save(createRequest));
+		// Сохраняем пользователя и получаем UserDTO
+		UserDTO userDTO = userService.save(createRequest);
+
+		// Преобразуем UserDTO обратно в User entity для создания токена
+		User user = userMapper.toEntity(userDTO);
 
 		String accessToken = createAccessToken(user);
 		RefreshToken refreshToken = createAndSaveRefreshToken(user);

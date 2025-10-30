@@ -45,7 +45,9 @@ public class RoleServiceImpl implements RoleService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Role findByCode(Role.RoleCode code) {
-		return repository.findByCode(code);
+		return repository.findByCode(code)
+				.orElseThrow(() -> new NotFoundException("Role not found with code: " + code));
 	}
 }

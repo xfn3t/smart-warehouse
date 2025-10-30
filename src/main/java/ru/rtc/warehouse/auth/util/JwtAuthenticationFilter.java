@@ -23,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private final JwtUtil jwtUtil;
 	private final UserDetailsServiceImpl userDetailsService;
 
+	// Временный фильтр для обхода 403
 	@Override
 	protected void doFilterInternal(HttpServletRequest request,
 									HttpServletResponse response,
@@ -54,7 +55,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		} catch (Exception ex) {
 			log.error("Cannot set user authentication: {}", ex.getMessage());
 		}
-
 		filterChain.doFilter(request, response);
 	}
 }

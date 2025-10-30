@@ -28,13 +28,18 @@ public class UserServiceImpl implements UserService {
 			throw new AlreadyExistsException("User already exists");
 		}
 
-		if (request.getRole() == null) {
-			user.setRole(roleService.findByCode(RoleCode.VIEWER));
+		// Обрабатываем оба случая: с ролью и без
+		Role role;
+		if (request.getRole() != null) {
+			// Ищем переданную роль в базе данных
+			role = roleService.findByCode(RoleCode.from(request.getRole()));
+		} else {
+			// Роль по умолчанию
+			role = roleService.findByCode(RoleCode.VIEWER);
 		}
+
+		user.setRole(role); // Устанавливаем найденную роль из БД
 
 		return userMapper.toDto(userEntityService.saveUser(user));
 	}
-
-
-
 }
