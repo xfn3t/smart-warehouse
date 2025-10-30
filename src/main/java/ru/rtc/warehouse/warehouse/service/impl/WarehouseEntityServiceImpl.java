@@ -21,6 +21,11 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 	}
 
 	@Override
+	public Warehouse saveAndReturn(Warehouse warehouse) {
+		return warehouseRepository.save(warehouse);
+	}
+
+	@Override
 	public void update(Warehouse warehouse) {
 		warehouseRepository.save(warehouse);
 	}
@@ -40,6 +45,11 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 	public Warehouse findByCode(String code) {
 		return warehouseRepository.findByCode(code)
 				.orElseThrow(() -> new NotFoundException("Warehouse not found"));
+	}
+
+	@Override
+	public List<Warehouse> findByUserId(Long id) {
+		return warehouseRepository.findByUserId(id);
 	}
 
 

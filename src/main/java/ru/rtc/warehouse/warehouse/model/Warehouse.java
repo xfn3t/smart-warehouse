@@ -2,6 +2,11 @@ package ru.rtc.warehouse.warehouse.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.user.model.User;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "warehouses")
@@ -31,8 +36,20 @@ public class Warehouse {
 	@Column(name = "shelf_max_size", nullable = false)
 	private Integer shelfMaxSize;
 
-	@Column(length = 255)
-	private String location;
+	@Column(name = "location", length = 255)
+	private String warehouseLocation;
+
+	@OneToMany(mappedBy = "warehouse")
+	private Set<Location> locations;
+
+	@ManyToMany
+	@JoinTable(
+			name = "user_warehouses",
+			joinColumns = @JoinColumn(name = "warehouse_id"),
+			inverseJoinColumns = @JoinColumn(name = "user_id")
+	)
+	@Builder.Default
+	private Set<User> users = new HashSet<>();
 
 	@Builder.Default
 	@Column(name = "is_deleted", nullable = false)

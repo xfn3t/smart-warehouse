@@ -42,14 +42,11 @@ databaseChangeLog:
                   name: last_update
                   type: TIMESTAMP
               - column:
-                  name: current_zone
-                  type: VARCHAR(10)
-              - column:
-                  name: current_row
-                  type: INTEGER
-              - column:
-                  name: current_shelf
-                  type: INTEGER
+                  name: location_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_location
+                    references: location(id)
               - column:
                   name: is_deleted
                   type: BOOLEAN

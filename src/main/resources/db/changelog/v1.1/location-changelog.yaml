@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-location
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: location
+      changes:
+        - createTable:
+            tableName: location
+            remarks: Локации
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: zone
+                  type: INTEGER
+              - column:
+                  name: row
+                  type: INTEGER
+              - column:
+                  name: shelf
+                  type: INTEGER
+              - column:
+                  name: location_status_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_location_status
+                    references: location_status(id)
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_warehouses
+                    references: warehouses(id)
