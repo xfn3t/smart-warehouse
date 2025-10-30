@@ -49,6 +49,11 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 	}
 
 	@Override
+	public Robot saveAndFlush(Robot robot) {
+		return robotRepository.saveAndFlush(robot);
+	}
+
+	@Override
 	public void delete(Long id) {
 		robotRepository.deleteById(id);
 	}

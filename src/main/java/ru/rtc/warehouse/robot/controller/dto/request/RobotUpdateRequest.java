@@ -20,11 +20,13 @@ public class RobotUpdateRequest {
 	private Integer batteryLevel;
 
 	@Size(max = 10, message = "Zone code must not exceed 10 characters")
-	private String currentZone;
+	private Integer currentZone;
 
 	@PositiveOrZero(message = "Row must be non-negative")
 	private Integer currentRow;
 
 	@PositiveOrZero(message = "Shelf must be non-negative")
 	private Integer currentShelf;
+
+	private Long warehouseId;
 }

@@ -2,7 +2,6 @@ package ru.rtc.warehouse.robot.service.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.warehouse.service.dto.WarehouseDTO;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +15,6 @@ public class RobotDTO {
 	private String currentZone;
 	private Integer currentRow;
 	private Integer currentShelf;
-	private WarehouseDTO warehouse;
+	private Long warehouseId;
 	private LocalDateTime lastUpdate;
 }

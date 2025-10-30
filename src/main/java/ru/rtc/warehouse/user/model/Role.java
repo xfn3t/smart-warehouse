@@ -32,15 +32,7 @@ public class Role {
 		VIEWER,
 		ADMIN,
 		MANAGER,
-		OPERATOR;
-
-		public static RoleCode from(String value) {
-			if (value == null) return null;
-			try {
-				return RoleCode.valueOf(value.toUpperCase());
-			} catch (IllegalArgumentException e) {
-				throw new IllegalArgumentException("Unknown role: " + value);
-			}
-		}
+		OPERATOR,
+		ROBOT
 	}
 }

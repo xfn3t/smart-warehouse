@@ -2,10 +2,12 @@ package ru.rtc.warehouse.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.auth.controller.dto.request.RegisterRequest;
 import ru.rtc.warehouse.auth.controller.dto.response.AuthResponse;
@@ -14,12 +16,16 @@ import ru.rtc.warehouse.auth.repository.RefreshTokenRepository;
 import ru.rtc.warehouse.auth.util.JwtUtil;
 import ru.rtc.warehouse.user.controller.dto.request.UserCreateRequest;
 import ru.rtc.warehouse.user.mapper.UserMapper;
+import ru.rtc.warehouse.user.model.Role.RoleCode;
 import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.UserService;
 import ru.rtc.warehouse.user.service.dto.UserDTO;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +41,7 @@ public class AuthService {
 	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
 	private long refreshTokenValiditySeconds; // default 14 days
 
+	@Transactional
 	public AuthResponse login(String email, String password) {
 		Authentication auth = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(email, password)
@@ -43,19 +50,23 @@ public class AuthService {
 		var userDetails = (UserDetailsImpl) auth.getPrincipal();
 		User user = userDetails.getUser();
 
+		refreshTokenRepository.deleteAllByUser(user);
+
 		String accessToken = createAccessToken(user);
 		RefreshToken refreshToken = createAndSaveRefreshToken(user);
 
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil == null ? 0 : jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime()/1000)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 
 	private String createAccessToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", user.getRole().getCode());
+		claims.put("roles", List.of(user.getRole().getCode()));
+		claims.put("userId", user.getId());
+		claims.put("name", user.getName());
 		return jwtUtil.generateAccessToken(user.getEmail(), claims);
 	}
 
@@ -71,6 +82,7 @@ public class AuthService {
 		return refreshTokenRepository.save(rt);
 	}
 
+	@Transactional
 	public AuthResponse refreshAccessToken(String refreshTokenString) {
 		RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
 				.orElseThrow(() -> new RuntimeException("Invalid refresh token"));
@@ -81,19 +93,18 @@ public class AuthService {
 
 		User user = refreshToken.getUser();
 
-		refreshToken.setRevoked(true);
-		refreshTokenRepository.save(refreshToken);
-
+		refreshTokenRepository.deleteAllByUser(user);
 		RefreshToken newRefresh = createAndSaveRefreshToken(user);
 		String accessToken = createAccessToken(user);
 
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(newRefresh.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil == null ? 0 : jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime()/1000)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 
+	@Transactional
 	public void logout(String refreshToken) {
 		refreshTokenRepository.findByToken(refreshToken).ifPresent(rt -> {
 			rt.setRevoked(true);
@@ -101,12 +112,22 @@ public class AuthService {
 		});
 	}
 
+	@Transactional
 	public AuthResponse register(RegisterRequest request) {
+		RoleCode role = null;
+		if (request.getRole() != null && !request.getRole().isBlank()) {
+			try {
+				role = RoleCode.valueOf(request.getRole().toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new RuntimeException("Invalid role: " + request.getRole());
+			}
+		}
+
 		UserCreateRequest createRequest = UserCreateRequest.builder()
 				.email(request.getEmail())
 				.name(request.getName())
 				.password(passwordEncoder.encode(request.getPassword()))
-				.role(request.getRole())
+				.role(role != null ? role.toString() : null)
 				.build();
 
 		// Сохраняем пользователя и получаем UserDTO
@@ -121,9 +142,7 @@ public class AuthService {
 		return AuthResponse.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(
-						jwtUtil.parseAndValidate(accessToken).getBody().getExpiration().getTime() / 1000
-				)
+				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
 				.build();
 	}
 }

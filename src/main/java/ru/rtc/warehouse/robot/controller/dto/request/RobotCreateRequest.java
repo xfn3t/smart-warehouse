@@ -1,13 +1,14 @@
 package ru.rtc.warehouse.robot.controller.dto.request;
 
-import lombok.Getter;
-import lombok.Setter;
-import ru.rtc.warehouse.robot.model.RobotStatus;
+import lombok.*;
 
 import javax.validation.constraints.*;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class RobotCreateRequest {
 
 	@Size(max = 50, message = "Code must not exceed 50 characters")
@@ -22,7 +23,7 @@ public class RobotCreateRequest {
 	private Integer batteryLevel;
 
 	@Size(max = 10, message = "Zone code must not exceed 10 characters")
-	private String currentZone;
+	private Integer currentZone;
 
 	@PositiveOrZero(message = "Row must be non-negative")
 	private Integer currentRow;
@@ -30,4 +31,6 @@ public class RobotCreateRequest {
 	@PositiveOrZero(message = "Shelf must be non-negative")
 	private Integer currentShelf;
 
+	@NotNull(message = "Warehouse ID is required")
+	private Long warehouseId;
 }

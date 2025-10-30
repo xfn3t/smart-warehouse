@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-role-robot
+      author: dev
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: code
+                  value: ROBOT
