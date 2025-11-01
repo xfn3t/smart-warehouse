@@ -15,7 +15,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.rtc.warehouse.location.model.Location;
-import lombok.*;
 import java.time.LocalDateTime;
 
 import ru.rtc.warehouse.robot.model.Robot;
