@@ -1,11 +1,8 @@
 package ru.rtc.warehouse.user.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "roles")
@@ -33,6 +30,16 @@ public class Role {
 		ADMIN,
 		MANAGER,
 		OPERATOR,
-		ROBOT
+		ROBOT;
+
+		@JsonCreator
+		public static RoleCode from(String value) {
+			if (value == null) return null;
+			try {
+				return RoleCode.valueOf(value.trim().toUpperCase());
+			} catch (IllegalArgumentException ex) {
+				throw new IllegalArgumentException("Unknown status: " + value);
+			}
+		}
 	}
 }

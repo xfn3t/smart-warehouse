@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5433:5432"     # <-- публикуем 5433 снаружи, внутри по-прежнему 5432
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -37,7 +37,7 @@ services:
     depends_on: [ postgres, redis ]
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
-      DB_HOST: postgres           # <-- для сборки URL внутри сети
+      DB_HOST: postgres
       DB_PORT: 5432
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: ${REDIS_PORT}

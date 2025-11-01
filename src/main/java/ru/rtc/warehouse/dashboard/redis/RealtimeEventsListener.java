@@ -21,14 +21,20 @@ public class RealtimeEventsListener {
     private final RealtimeStatsService stats;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void on(InventoryHistoryCreatedEvent e) {
-        writer.onHistoryCreated(e.getHistory());
-        broker.convertAndSend("/topic/realtime", stats.getStats()); // мгновенно пушим обновление
+    public void on(RobotSnapshotEvent e) {
+        var robot = e.getRobot();
+        writer.onRobotSnapshot(robot);
+
+        var warehouseCode = robot.getWarehouse().getCode();
+        broker.convertAndSend("/topic/realtime/" + warehouseCode, stats.getStats(warehouseCode));
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void on(RobotSnapshotEvent e) {
-        writer.onRobotSnapshot(e.getRobot());
-        broker.convertAndSend("/topic/realtime", stats.getStats());
+    public void on(InventoryHistoryCreatedEvent e) {
+        var history = e.getHistory();
+        writer.onHistoryCreated(history);
+
+        var warehouseCode = history.getWarehouse().getCode();
+        broker.convertAndSend("/topic/realtime/" + warehouseCode, stats.getStats(warehouseCode));
     }
 }

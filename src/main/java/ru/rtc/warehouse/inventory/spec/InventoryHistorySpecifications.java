@@ -1,88 +1,113 @@
 package ru.rtc.warehouse.inventory.spec;
 
-
-import jakarta.persistence.criteria.JoinType;
-import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 
-
+import jakarta.persistence.criteria.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+public class InventoryHistorySpecifications {
 
-/**
- * Строитель динамических JPA-спецификаций для фильтров истории.
- */
-@NoArgsConstructor
-public final class InventoryHistorySpecifications {
+    public static Specification<InventoryHistory> build(Long warehouseId, InventoryHistorySearchRequest rq) {
+        return Specification.<InventoryHistory>unrestricted()
+                .and(byWarehouse(warehouseId))
+                .and(byDateRange(rq.getFrom(), rq.getTo()))
+                .and(byZones(rq.getZones()))
+                .and(byStatuses(rq.getStatuses()))
+                .and(byCategories(rq.getCategories()))
+                .and(bySearchQuery(rq.getQ()))
+                .and(byRobots(rq.getRobots()))
+                .and(notDeleted());
+    }
 
-    /**
-     * Собирает единую спецификацию на основе всех заданных фильтров.
-     */
-    public static Specification<InventoryHistory> build(InventoryHistorySearchRequest rq) {
-        Specification<InventoryHistory> spec = Specification.allOf();
-        if (rq == null) return spec;
+    private static Specification<InventoryHistory> byWarehouse(Long warehouseId) {
+        return (root, query, cb) -> {
+            if (warehouseId == null) return null;
+            return cb.equal(root.get("warehouse").get("id"), warehouseId);
+        };
+    }
 
-        // Период по scannedAt (если в сущности LocalDateTime — конвертируй из Instant)
-        if (rq.getFrom() != null) {
-            var from = LocalDateTime.ofInstant(rq.getFrom(), ZoneOffset.UTC);
-            spec = spec.and((root, cq, cb) -> cb.greaterThanOrEqualTo(root.get("scannedAt"), from));
-        }
-        if (rq.getTo() != null) {
-            var to = LocalDateTime.ofInstant(rq.getTo(), ZoneOffset.UTC);
-            spec = spec.and((root, cq, cb) -> cb.lessThan(root.get("scannedAt"), to));
-        }
+    private static Specification<InventoryHistory> byDateRange(Instant from, Instant to) {
+        return (root, query, cb) -> {
+            if (from == null && to == null) return null;
 
-        if (!CollectionUtils.isEmpty(rq.getZones())) {
-            spec = spec.and((root, cq, cb) -> root.get("zone").in(rq.getZones()));
-        }
+            Path<LocalDateTime> scannedAt = root.get("scannedAt");
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (!CollectionUtils.isEmpty(rq.getStatuses())) {
-            spec = spec.and((root, q, cb) -> {
-                var st = root.join("status", JoinType.LEFT); // сущность InventoryHistoryStatus
-                return st.get("code").in(rq.getStatuses());  // code — enum
-            });
-        }
+            if (from != null) {
+                LocalDateTime fromDate = from.atZone(ZoneId.systemDefault()).toLocalDateTime();
+                predicates.add(cb.greaterThanOrEqualTo(scannedAt, fromDate));
+            }
+            if (to != null) {
+                LocalDateTime toDate = to.atZone(ZoneId.systemDefault()).toLocalDateTime();
+                predicates.add(cb.lessThan(scannedAt, toDate));
+            }
 
-        // Категории (только product)
-        if (!CollectionUtils.isEmpty(rq.getCategories())) {
-            spec = spec.and((root, cq, cb) -> {
-                var product = root.join("product", JoinType.LEFT);
-                return product.get("category").in(rq.getCategories());
-            });
-        }
-        // Строковый поиск q: Product.code OR Product.name OR Robot.code (case-insensitive)
-        if (StringUtils.hasText(rq.getQ())) {
-            spec = spec.and((root, cq, cb) -> {
-                var product = root.join("product", JoinType.LEFT);
-                var robot = root.join("robot", JoinType.LEFT);
-                String like = "%" + rq.getQ().toLowerCase() + "%";
-                cq.distinct(true); // важно: избегаем дублей из-за join'ов
-                return cb.or(
-                        cb.like(cb.lower(product.get("code")), like),
-                        cb.like(cb.lower(product.get("name")), like),
-                        cb.like(cb.lower(robot.get("code")), like)
-                );
-            });
-        }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 
-        // Фильтр по роботам — по robotCode (а не просто code)
-        if (!CollectionUtils.isEmpty(rq.getRobots())) {
-            spec = spec.and((root, cq, cb) ->
-                    root.join("robot", JoinType.LEFT)
-                            .get("code").in(rq.getRobots()));
-        }
+    private static Specification<InventoryHistory> byZones(List<Integer> zones) {
+        return (root, query, cb) -> {
+            if (zones == null || zones.isEmpty()) return null;
+            return root.get("location").get("zone").in(zones);
+        };
+    }
 
-        // На всякий случай обеспечим distinct даже если q не задан
-        spec = spec.and((root, cq, cb) -> { cq.distinct(true); return cb.conjunction(); });
+    private static Specification<InventoryHistory> byStatuses(List<InventoryHistoryStatus.InventoryHistoryStatusCode> statuses) {
+        return (root, query, cb) -> {
+            if (statuses == null || statuses.isEmpty()) return null;
 
-        return spec;
+            // Создаем JOIN только если нужно
+            Join<Object, Object> statusJoin = root.join("status", JoinType.INNER);
+            return statusJoin.get("code").in(statuses);
+        };
+    }
+
+    private static Specification<InventoryHistory> byCategories(List<String> categories) {
+        return (root, query, cb) -> {
+            if (categories == null || categories.isEmpty()) return null;
+
+            // Если есть категории, делаем JOIN к product -> category
+            Join<Object, Object> productJoin = root.join("product", JoinType.INNER);
+            Join<Object, Object> categoryJoin = productJoin.join("category", JoinType.INNER);
+            return categoryJoin.get("code").in(categories);
+        };
+    }
+
+    private static Specification<InventoryHistory> byRobots(List<String> robots) {
+        return (root, query, cb) -> {
+            if (robots == null || robots.isEmpty()) return null;
+            return root.get("robot").get("code").in(robots);
+        };
+    }
+
+    private static Specification<InventoryHistory> bySearchQuery(String searchQuery) {
+        return (root, query, cb) -> {
+            if (!StringUtils.hasText(searchQuery)) return null;
+
+            String likePattern = "%" + searchQuery.toLowerCase() + "%";
+
+            // Создаем JOIN'ы только когда есть поисковый запрос
+            Join<Object, Object> productJoin = root.join("product", JoinType.INNER);
+            Join<Object, Object> robotJoin = root.join("robot", JoinType.LEFT);
+
+            return cb.or(
+                    cb.like(cb.lower(productJoin.get("code")), likePattern),
+                    cb.like(cb.lower(productJoin.get("name")), likePattern),
+                    cb.like(cb.lower(robotJoin.get("code")), likePattern)
+            );
+        };
+    }
+
+    private static Specification<InventoryHistory> notDeleted() {
+        return (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
     }
 }

@@ -17,4 +17,6 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
 			"WHERE uw.user_id = :userId AND w.is_deleted = false",
 			nativeQuery = true)
 	List<Warehouse> findByUserId(Long userId);
+
+	Optional<Warehouse> findByCodeAndIsDeletedFalse(String warehouseCode);
 }

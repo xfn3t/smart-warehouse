@@ -47,9 +47,9 @@ public class DevSeedController {
                 h.setWarehouse(wh.get(rnd.nextInt(wh.size())));
                 h.setRobot(rb.get(rnd.nextInt(rb.size())));
                 h.setProduct(pr.get(rnd.nextInt(pr.size())));
-                h.setZone(1 + rnd.nextInt(120));
-                h.setRowNumber(1 + rnd.nextInt(200));
-                h.setShelfNumber(1 + rnd.nextInt(20));
+                h.getLocation().setZone(1 + rnd.nextInt(120));
+                h.getLocation().setRow(1 + rnd.nextInt(200));
+                h.getLocation().setShelf(1 + rnd.nextInt(20));
 
                 int expected = 10 + rnd.nextInt(40);
                 int qty = Math.max(0, expected + (-6 + rnd.nextInt(13)));

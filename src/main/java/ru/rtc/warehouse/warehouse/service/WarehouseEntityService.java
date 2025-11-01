@@ -9,4 +9,5 @@ public interface WarehouseEntityService extends CrudEntityService<Warehouse, Lon
 	Warehouse findByCode(String code);
 	List<Warehouse> findByUserId(Long id);
 	Warehouse saveAndReturn(Warehouse warehouse);
+	Warehouse validateAndGetWarehouse(String warehouseCode);
 }

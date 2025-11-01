@@ -1,7 +1,10 @@
 package ru.rtc.warehouse.warehouse.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 import ru.rtc.warehouse.warehouse.repository.WarehouseRepository;
@@ -56,5 +59,15 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 	@Override
 	public void delete(Long id) {
 		warehouseRepository.deleteById(id);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Warehouse validateAndGetWarehouse(String warehouseCode) {
+		return warehouseRepository.findByCodeAndIsDeletedFalse(warehouseCode)
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.NOT_FOUND,
+						"Склад не найден: " + warehouseCode
+				));
 	}
 }
