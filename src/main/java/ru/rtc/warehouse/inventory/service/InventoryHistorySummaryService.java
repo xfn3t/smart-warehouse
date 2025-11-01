@@ -4,5 +4,5 @@ import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchR
 import ru.rtc.warehouse.inventory.service.dto.HistorySummaryDTO;
 
 public interface InventoryHistorySummaryService {
-    HistorySummaryDTO summarize(InventoryHistorySearchRequest rq);
+    HistorySummaryDTO summarize(String warehouseCode, InventoryHistorySearchRequest rq);
 }

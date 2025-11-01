@@ -1,12 +1,12 @@
-package ru.rtc.warehouse.dashboard.realtime;
+package ru.rtc.warehouse.dashboard.publisher;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ru.rtc.warehouse.dashboard.dto.RealtimeStatsDTO;
 import ru.rtc.warehouse.dashboard.service.RealtimeStatsService;
+import ru.rtc.warehouse.dashboard.service.WarehouseEntServiceAdapter;
 
 @Component
 @EnableScheduling
@@ -15,11 +15,15 @@ public class RealtimePushScheduler {
 
     private final RealtimeStatsService statsService;
     private final SimpMessagingTemplate broker;
+    private final WarehouseEntServiceAdapter warehouseService;
 
-    // каждые 5 секунд шлём свежий срез
-    @Scheduled(fixedRateString = "${app.dashboard.push-interval-ms:5000}")
+    // каждые 30 секунд шлём свежий срез
+    @Scheduled(fixedRateString = "${app.dashboard.push-interval-ms:30000}")
     public void push() {
-        RealtimeStatsDTO dto = statsService.getStats();
-        broker.convertAndSend("/topic/realtime", dto);
+        warehouseService.findAll().forEach(w -> {
+            String warehouseCode = w.getCode();
+            broker.convertAndSend("/topic/realtime/" + warehouseCode,
+                    statsService.getStats(warehouseCode));
+        });
     }
 }

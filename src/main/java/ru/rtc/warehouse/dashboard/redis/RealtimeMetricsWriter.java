@@ -13,11 +13,8 @@ import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.robot.model.RobotStatus.StatusCode;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 /**
  * Записывает атомарные метрики в Redis по событиям домена.
@@ -34,30 +31,33 @@ public class RealtimeMetricsWriter {
      * Обновляет метрики по созданной записи истории инвентаризации.
      */
     public void onHistoryCreated(InventoryHistory ih) {
-        if (ih == null || ih.getScannedAt() == null) return;
+        if (ih == null || ih.getScannedAt() == null || ih.getWarehouse() == null) return;
 
-        // 1) "Проверено сегодня" — по локальному дню САМОГО события
+        String warehouseCode = ih.getWarehouse().getCode();
+        if (warehouseCode == null) return;
+
         LocalDateTime scannedAt = ih.getScannedAt();
         LocalDate day = scannedAt.toLocalDate();
-        String dayKey = RealtimeRedisKeys.checkedToday(day);
+
+        // checkedToday
+        String dayKey = RealtimeRedisKeys.checkedToday(warehouseCode, day);
         rt.opsForValue().increment(dayKey);
         ensureExpireIfAbsent(dayKey, Duration.ofDays(props.getTtl().getCheckedDayDays()));
 
-        // 2) Поминутная активность — бакеты по локальному времени сервера
+        // activityMinute
         long epochMinute = RealtimeRedisKeys.epochMinute(scannedAt);
-        String minuteKey = RealtimeRedisKeys.activityMinute(epochMinute);
+        String minuteKey = RealtimeRedisKeys.activityMinute(warehouseCode, epochMinute);
         rt.opsForValue().increment(minuteKey);
         ensureExpireIfAbsent(minuteKey, Duration.ofSeconds(props.getTtl().getMinuteSeriesSeconds()));
 
-        // 3) Критические SKU — по коду товара и статусу записи
+        // critical SKUs
         Product p = ih.getProduct();
         if (p != null && p.getCode() != null && ih.getStatus() != null && ih.getStatus().getCode() != null) {
             String sku = p.getCode();
             if (ih.getStatus().getCode() == InventoryHistoryStatusCode.CRITICAL) {
-                rt.opsForSet().add(RealtimeRedisKeys.criticalSkuSet(), sku);
+                rt.opsForSet().add(RealtimeRedisKeys.criticalSkuSet(warehouseCode), sku);
             } else {
-                // не критичный — исключаем из множества
-                rt.opsForSet().remove(RealtimeRedisKeys.criticalSkuSet(), sku);
+                rt.opsForSet().remove(RealtimeRedisKeys.criticalSkuSet(warehouseCode), sku);
             }
         }
     }
@@ -66,35 +66,38 @@ public class RealtimeMetricsWriter {
      * Обновляет метрики по состоянию робота.
      */
     public void onRobotSnapshot(@Nullable Robot robot) {
-        if (robot == null || robot.getCode() == null) return;
+        if (robot == null || robot.getCode() == null || robot.getWarehouse() == null) return;
+
+        final String warehouseCode = robot.getWarehouse().getCode();
+        if (warehouseCode == null) return;
 
         final String code = robot.getCode();
 
-        // Множества "все" / "активные"
-        rt.opsForSet().add(RealtimeRedisKeys.robotsAll(), code);
+        // --- Множества "все" / "активные" ---
+        rt.opsForSet().add(RealtimeRedisKeys.robotsAll(warehouseCode), code);
         if (isActive(robot)) {
-            rt.opsForSet().add(RealtimeRedisKeys.robotsActive(), code);
+            rt.opsForSet().add(RealtimeRedisKeys.robotsActive(warehouseCode), code);
         } else {
-            rt.opsForSet().remove(RealtimeRedisKeys.robotsActive(), code);
+            rt.opsForSet().remove(RealtimeRedisKeys.robotsActive(warehouseCode), code);
         }
 
-        // Средний заряд: поддерживаем сумму/кол-во + последнее значение по роботу
+        // --- Средний заряд: поддерживаем сумму/кол-во + последнее значение по роботу ---
         if (robot.getBatteryLevel() != null) {
-            String hashKey = RealtimeRedisKeys.batteryHash();
+            String hashKey = RealtimeRedisKeys.batteryHash(warehouseCode);
             String prevStr = (String) rt.opsForHash().get(hashKey, code);
             long newVal = robot.getBatteryLevel().longValue();
 
             if (prevStr == null) {
                 // первое наблюдение по этому роботу
                 rt.opsForHash().put(hashKey, code, String.valueOf(newVal));
-                rt.opsForValue().increment(RealtimeRedisKeys.batteryCnt());
-                rt.opsForValue().increment(RealtimeRedisKeys.batterySum(), newVal);
+                rt.opsForValue().increment(RealtimeRedisKeys.batteryCnt(warehouseCode));
+                rt.opsForValue().increment(RealtimeRedisKeys.batterySum(warehouseCode), newVal);
             } else {
                 long prev = parseLongSafe(prevStr, 0L);
                 long diff = newVal - prev;
                 if (diff != 0) {
                     rt.opsForHash().put(hashKey, code, String.valueOf(newVal));
-                    rt.opsForValue().increment(RealtimeRedisKeys.batterySum(), diff);
+                    rt.opsForValue().increment(RealtimeRedisKeys.batterySum(warehouseCode), diff);
                 }
             }
         }

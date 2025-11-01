@@ -5,5 +5,5 @@ import ru.rtc.warehouse.dashboard.dto.RealtimeStatsDTO;
 
 /** Чтение real-time метрик для дашборда. */
 public interface RealtimeStatsService {
-    RealtimeStatsDTO getStats();
+    RealtimeStatsDTO getStats(String warehouseCode);
 }

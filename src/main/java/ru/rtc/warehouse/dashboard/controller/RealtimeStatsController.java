@@ -14,7 +14,7 @@ import ru.rtc.warehouse.dashboard.service.RealtimeStatsService;
  * REST-контроллер блока "Статистика в реальном времени".
  */
 @RestController
-@RequestMapping("/api/realtime")
+@RequestMapping("/api/{warehouseCode}/realtime")
 @RequiredArgsConstructor
 public class RealtimeStatsController {
 
@@ -28,7 +28,7 @@ public class RealtimeStatsController {
                             schema = @Schema(implementation = RealtimeStatsDTO.class)))
     )
     @GetMapping("/stats")
-    public ResponseEntity<RealtimeStatsDTO> stats() {
-        return ResponseEntity.ok(service.getStats());
+    public ResponseEntity<RealtimeStatsDTO> stats(@PathVariable String warehouseCode) {
+        return ResponseEntity.ok(service.getStats(warehouseCode));
     }
 }
