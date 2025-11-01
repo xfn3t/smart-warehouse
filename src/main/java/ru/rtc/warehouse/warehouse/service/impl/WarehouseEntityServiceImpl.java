@@ -19,18 +19,13 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 	private final WarehouseRepository warehouseRepository;
 
 	@Override
-	public void save(Warehouse warehouse) {
-		warehouseRepository.save(warehouse);
-	}
-
-	@Override
-	public Warehouse saveAndReturn(Warehouse warehouse) {
+	public Warehouse save(Warehouse warehouse) {
 		return warehouseRepository.save(warehouse);
 	}
 
 	@Override
-	public void update(Warehouse warehouse) {
-		warehouseRepository.save(warehouse);
+	public Warehouse update(Warehouse warehouse) {
+		return warehouseRepository.save(warehouse);
 	}
 
 	@Override

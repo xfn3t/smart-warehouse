@@ -10,4 +10,5 @@ public interface LocationEntityService extends CrudEntityService<Location, Long>
 	List<Location> saveAll(List<Location> locations);
 
 	List<Location> findByWarehouse(Warehouse warehouse);
+	Location findByCoordinate(Integer zone, Integer row, Integer shelf, Long warehouseId);
 }

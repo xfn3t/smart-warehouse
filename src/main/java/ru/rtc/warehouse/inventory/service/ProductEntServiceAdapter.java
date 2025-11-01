@@ -14,4 +14,8 @@ public class ProductEntServiceAdapter {
 	public Product findByCode(String code) {
 		return productEntityService.findByCode(code);
 	}
+
+	public Product save(Product product) {
+		return productEntityService.save(product);
+	}
 }

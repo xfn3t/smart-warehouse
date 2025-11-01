@@ -17,13 +17,13 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 
 
 	@Override
-	public void save(Robot robot) {
-		robotRepository.save(robot);
+	public Robot save(Robot robot) {
+		return robotRepository.save(robot);
 	}
 
 	@Override
-	public void update(Robot robot) {
-		robotRepository.save(robot);
+	public Robot update(Robot robot) {
+		return robotRepository.save(robot);
 	}
 
 	@Override

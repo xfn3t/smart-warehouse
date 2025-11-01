@@ -22,13 +22,13 @@ public class InventoryHistoryStatusServiceImpl implements InventoryHistoryStatus
 	}
 
 	@Override
-	public void save(InventoryHistoryStatus inventoryHistoryStatus) {
-		repository.save(inventoryHistoryStatus);
+	public InventoryHistoryStatus save(InventoryHistoryStatus inventoryHistoryStatus) {
+		return repository.save(inventoryHistoryStatus);
 	}
 
 	@Override
-	public void update(InventoryHistoryStatus inventoryHistoryStatus) {
-		repository.save(inventoryHistoryStatus);
+	public InventoryHistoryStatus update(InventoryHistoryStatus inventoryHistoryStatus) {
+		return repository.save(inventoryHistoryStatus);
 	}
 
 	@Override

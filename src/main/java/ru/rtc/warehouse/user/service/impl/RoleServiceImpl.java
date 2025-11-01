@@ -17,13 +17,13 @@ public class RoleServiceImpl implements RoleService {
 	private final RoleRepository repository;
 
 	@Override
-	public void save(Role role) {
-		repository.save(role);
+	public Role save(Role role) {
+		return repository.save(role);
 	}
 
 	@Override
-	public void update(Role role) {
-		repository.save(role);
+	public Role update(Role role) {
+		return repository.save(role);
 	}
 
 	@Override

@@ -17,13 +17,13 @@ public class UserEntityServiceImpl implements UserEntityService {
 	private final UserRepository userRepository;
 
 	@Override
-	public void save(User user) {
-		userRepository.save(user);
+	public User save(User user) {
+		return userRepository.save(user);
 	}
 
 	@Override
-	public void update(User user) {
-		userRepository.save(user);
+	public User update(User user) {
+		return userRepository.save(user);
 	}
 
 	@Override

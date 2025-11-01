@@ -8,6 +8,5 @@ import java.util.List;
 public interface WarehouseEntityService extends CrudEntityService<Warehouse, Long> {
 	Warehouse findByCode(String code);
 	List<Warehouse> findByUserId(Long id);
-	Warehouse saveAndReturn(Warehouse warehouse);
 	Warehouse validateAndGetWarehouse(String warehouseCode);
 }

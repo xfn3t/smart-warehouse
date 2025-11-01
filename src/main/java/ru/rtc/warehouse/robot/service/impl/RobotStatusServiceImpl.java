@@ -17,13 +17,13 @@ public class RobotStatusServiceImpl implements RobotStatusService {
 	private final RobotStatusRepository repository;
 
 	@Override
-	public void save(RobotStatus robotStatus) {
-		repository.save(robotStatus);
+	public RobotStatus save(RobotStatus robotStatus) {
+		return repository.save(robotStatus);
 	}
 
 	@Override
-	public void update(RobotStatus robotStatus) {
-		repository.save(robotStatus);
+	public RobotStatus update(RobotStatus robotStatus) {
+		return repository.save(robotStatus);
 	}
 
 	@Override

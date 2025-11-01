@@ -17,13 +17,13 @@ public class LocationEntityServiceImpl implements LocationEntityService {
 	private final LocationRepository repository;
 
 	@Override
-	public void save(Location location) {
-		repository.save(location);
+	public Location save(Location location) {
+		return repository.save(location);
 	}
 
 	@Override
-	public void update(Location location) {
-		repository.save(location);
+	public Location update(Location location) {
+		return repository.save(location);
 	}
 
 	@Override
@@ -50,6 +50,12 @@ public class LocationEntityServiceImpl implements LocationEntityService {
 	@Override
 	public List<Location> findByWarehouse(Warehouse warehouse) {
 		return repository.findByWarehouse(warehouse);
+	}
+
+	@Override
+	public Location findByCoordinate(Integer zone, Integer row, Integer shelf, Long warehouseId) {
+		return repository.findByCoordinate(zone, row, shelf, warehouseId)
+				.orElseThrow(() -> new NotFoundException("Location not found"));
 	}
 
 }

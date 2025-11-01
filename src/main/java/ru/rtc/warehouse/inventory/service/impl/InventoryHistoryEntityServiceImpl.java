@@ -16,13 +16,13 @@ public class InventoryHistoryEntityServiceImpl implements InventoryHistoryEntity
 	private final InventoryHistoryRepository inventoryHistoryRepository;
 
 	@Override
-	public void save(InventoryHistory inventoryHistory) {
-		inventoryHistoryRepository.save(inventoryHistory);
+	public InventoryHistory save(InventoryHistory inventoryHistory) {
+		return inventoryHistoryRepository.save(inventoryHistory);
 	}
 
 	@Override
-	public void update(InventoryHistory inventoryHistory) {
-		inventoryHistoryRepository.save(inventoryHistory);
+	public InventoryHistory update(InventoryHistory inventoryHistory) {
+		return inventoryHistoryRepository.save(inventoryHistory);
 	}
 
 	@Override

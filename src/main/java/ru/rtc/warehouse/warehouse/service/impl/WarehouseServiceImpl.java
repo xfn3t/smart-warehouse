@@ -33,7 +33,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 		Warehouse warehouse = warehouseMapper.toEntity(createRequest);
 		warehouse.setUsers(new HashSet<>(Set.of(userServiceAdapter.getUserById(userId))));
 
-		Warehouse savedWarehouse = warehouseEntityService.saveAndReturn(warehouse);
+		Warehouse savedWarehouse = warehouseEntityService.save(warehouse);
 
 		savedWarehouse.setLocations(new HashSet<>(
 				locationServiceAdapter.generateLocationForWarehouse(savedWarehouse)

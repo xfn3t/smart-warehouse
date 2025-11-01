@@ -16,13 +16,13 @@ public class ProductEntityServiceImpl implements ProductEntityService {
 	private final ProductRepository productRepository;
 
 	@Override
-	public void save(Product product) {
-		productRepository.save(product);
+	public Product save(Product product) {
+		return productRepository.save(product);
 	}
 
 	@Override
-	public void update(Product product) {
-		productRepository.save(product);
+	public Product update(Product product) {
+		return productRepository.save(product);
 	}
 
 	@Override
