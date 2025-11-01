@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.inventory.service;
 
+import org.springframework.web.multipart.MultipartFile;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryCreateRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateRequest;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
@@ -8,6 +9,7 @@ import java.util.List;
 
 public interface InventoryHistoryService {
 	void save(InventoryHistoryCreateRequest request);
+	void saveCsv(MultipartFile multipartFile, String warehouseCode);
 	void update(InventoryHistoryUpdateRequest request, Long id);
 	List<InventoryHistoryDTO> findAll();
 	InventoryHistoryDTO findById(Long id);

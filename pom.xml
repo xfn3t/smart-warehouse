@@ -144,6 +144,12 @@
 			<artifactId>feign-slf4j</artifactId>
 			<version>12.5</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>5.7.1</version>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>

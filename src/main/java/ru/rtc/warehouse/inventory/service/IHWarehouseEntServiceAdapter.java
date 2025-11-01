@@ -14,4 +14,8 @@ public class IHWarehouseEntServiceAdapter {
 	public Warehouse validateAndGetWarehouse(String warehouseCode) {
 		return warehouseEntityService.validateAndGetWarehouse(warehouseCode);
 	}
+
+	public Warehouse findByCode(String code) {
+		return warehouseEntityService.findByCode(code);
+	}
 }

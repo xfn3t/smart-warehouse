@@ -1,0 +1,88 @@
+package ru.rtc.warehouse.inventory.service.impl;
+
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import ru.rtc.warehouse.inventory.controller.dto.request.InventoryCsvDto;
+import ru.rtc.warehouse.inventory.service.CsvProcessingService;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class CsvProcessingServiceImpl implements CsvProcessingService {
+
+	public List<InventoryCsvDto> parseCsvFile(MultipartFile file) {
+		try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+
+			// Используем стратегию с именами колонок вместо позиционной
+			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
+					new HeaderColumnNameTranslateMappingStrategy<>();
+			strategy.setType(InventoryCsvDto.class);
+
+			// Маппинг заголовков CSV на поля DTO
+			Map<String, String> columnMapping = new HashMap<>();
+			columnMapping.put("sku_code", "skuCode");
+			columnMapping.put("name", "name");
+			columnMapping.put("category", "category");
+			columnMapping.put("location", "location"); // временно мапим на location
+			columnMapping.put("quantity", "quantity");
+			columnMapping.put("minStock", "minStock");
+			columnMapping.put("optimalStock", "optimalStock");
+			strategy.setColumnMapping(columnMapping);
+
+			List<InventoryCsvDto> result = new CsvToBeanBuilder<InventoryCsvDto>(reader)
+					.withMappingStrategy(strategy)
+					.withIgnoreLeadingWhiteSpace(true)
+					.withSeparator(';')
+					.withSkipLines(0) // не пропускаем строки, т.к. работаем с заголовками
+					.build()
+					.parse();
+
+			// Обрабатываем location для каждого DTO
+			return result.stream()
+					.map(this::processLocation)
+					.collect(Collectors.toList());
+
+		} catch (Exception e) {
+			log.error("Error processing CSV file", e);
+			throw new RuntimeException("Failed to process CSV file: " + e.getMessage(), e);
+		}
+	}
+
+	private InventoryCsvDto processLocation(InventoryCsvDto dto) {
+		// Получаем location из временного поля
+		String location = dto.getLocation();
+		if (location != null && !location.isEmpty()) {
+			String[] parts = location.split("-");
+			if (parts.length >= 3) {
+				dto.setZone(parseInteger(parts[0]));
+				dto.setRow(parseInteger(parts[1]));
+				dto.setShelf(parseInteger(parts[2]));
+			}
+		}
+		// Очищаем временное поле
+		dto.setLocation(null);
+		return dto;
+	}
+
+	private Integer parseInteger(String value) {
+		if (value == null || value.trim().isEmpty()) return null;
+		try {
+			return Integer.parseInt(value.trim());
+		} catch (NumberFormatException e) {
+			log.warn("Failed to parse integer value: {}", value);
+			return null;
+		}
+	}
+}
