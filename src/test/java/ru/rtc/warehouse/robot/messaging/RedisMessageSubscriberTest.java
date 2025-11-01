@@ -10,6 +10,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import ru.rtc.warehouse.config.RobotProperties;
+import ru.rtc.warehouse.config.messaging.RedisMessageSubscriber;
+import ru.rtc.warehouse.config.service.adapter.RobotEntityAdapter;
+import ru.rtc.warehouse.config.service.adapter.impl.RobotEntityAdapterImpl;
 import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 import ru.rtc.warehouse.robot.repository.RobotRepository;
@@ -28,6 +31,7 @@ class RedisMessageSubscriberTest {
     private RobotProperties robotProperties;
     private ObjectMapper objectMapper;
     private RobotRepository robotRepository;
+    private RobotEntityAdapter robotEntityAdapter;
     private StringRedisTemplate redisTemplate;
     private RedisMessageSubscriber subscriber;
 
@@ -41,8 +45,8 @@ class RedisMessageSubscriberTest {
         objectMapper = new ObjectMapper();
         robotRepository = mock(RobotRepository.class);
         redisTemplate = mock(StringRedisTemplate.class);
-
-        subscriber = new RedisMessageSubscriber(messagingTemplate, robotProperties, objectMapper, robotRepository, redisTemplate);
+        robotEntityAdapter = mock(RobotEntityAdapterImpl.class);
+        subscriber = new RedisMessageSubscriber(messagingTemplate, robotProperties, objectMapper, robotEntityAdapter, redisTemplate);
     }
 
     @Test

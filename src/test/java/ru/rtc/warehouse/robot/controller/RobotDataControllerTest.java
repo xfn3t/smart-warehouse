@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.rtc.warehouse.robot.controller.dto.response.RobotDataResponse;
@@ -43,6 +44,7 @@ class RobotDataControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @WithMockUser(username = "RB-0001", roles = {"ROBOT"})
     void whenValidData_thenCallsServiceAndReturnsResponse() throws Exception {
         Map<String, Object> request = Map.of(
             "code", "RB-0001",
@@ -78,6 +80,7 @@ class RobotDataControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "RB-001", roles = {"ROBOT"})
     void whenInvalidData_thenReturns400() throws Exception {
 
         Map<String, Object> request = Map.of(
