@@ -70,7 +70,7 @@ public class SecurityConfig {
 						.requestMatchers("/swagger-ui/**").permitAll()
 						.requestMatchers("/v3/swagger-ui/**").permitAll()
 						.requestMatchers("/api/auth/**").permitAll()
-						.anyRequest().permitAll()//временно
+						.anyRequest().authenticated()
 				)
 				.userDetailsService(customUserDetailsService);
 
