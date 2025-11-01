@@ -31,4 +31,6 @@ public class RobotUpdateRequest {
 
 	@PositiveOrZero(message = "Shelf must be non-negative")
 	private Integer currentShelf;
+
+	private Long warehouseId;
 }

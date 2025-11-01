@@ -1,15 +1,15 @@
 databaseChangeLog:
   - changeSet:
-      id: v1.1-create-roles
+      id: v1.1-create-location-status
       author: dev
       preConditions:
         - not:
             tableExists:
-              tableName: roles
+              tableName: location_status
       changes:
         - createTable:
-            tableName: roles
-            remarks: Справочник ролей пользователей
+            tableName: location_status
+            remarks: Статусы локаций
             columns:
               - column:
                   name: id
@@ -22,26 +22,22 @@ databaseChangeLog:
                   constraints:
                     unique: true
                     nullable: false
-              - column:
-                  name: is_deleted
-                  type: BOOLEAN
-                  defaultValueBoolean: false
 
         - insert:
-            tableName: roles
+            tableName: location_status
             columns:
               - column:
                   name: code
-                  value: ADMIN
+                  value: OLD
         - insert:
-            tableName: roles
+            tableName: location_status
             columns:
               - column:
                   name: code
-                  value: OPERATOR
+                  value: MEDIUM
         - insert:
-            tableName: roles
+            tableName: location_status
             columns:
               - column:
                   name: code
-                  value: VIEWER
+                  value: RECENT

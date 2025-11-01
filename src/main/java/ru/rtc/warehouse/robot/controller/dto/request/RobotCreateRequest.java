@@ -12,6 +12,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class RobotCreateRequest {
 
 	@Size(max = 50, message = "Code must not exceed 50 characters")
@@ -34,4 +37,6 @@ public class RobotCreateRequest {
 	@PositiveOrZero(message = "Shelf must be non-negative")
 	private Integer currentShelf;
 
+	@NotNull(message = "Warehouse ID is required")
+	private Long warehouseId;
 }

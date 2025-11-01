@@ -46,9 +46,9 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 		if (robotCode != null) inventoryHistory.setRobot(robotAdapter.findByCode(robotCode));
 		if (productCode != null) inventoryHistory.setProduct(productAdapter.findByCode(productCode));
 		if (quantity != null) inventoryHistory.setQuantity(quantity);
-		if (zone != null) inventoryHistory.setZone(zone);
-		if (rowNumber != null) inventoryHistory.setRowNumber(rowNumber);
-		if (shelfNumber != null) inventoryHistory.setShelfNumber(shelfNumber);
+		if (zone != null) inventoryHistory.getLocation().setZone(zone);
+		if (rowNumber != null) inventoryHistory.getLocation().setRow(rowNumber);
+		if (shelfNumber != null) inventoryHistory.getLocation().setShelf(shelfNumber);
 		if (status != null) inventoryHistory.setStatus(ihss.findByCode(status));
 		if (scannedAt != null) inventoryHistory.setScannedAt(scannedAt);
 

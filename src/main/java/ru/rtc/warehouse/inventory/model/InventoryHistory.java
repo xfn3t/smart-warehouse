@@ -9,6 +9,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ru.rtc.warehouse.location.model.Location;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -48,11 +54,9 @@ public class InventoryHistory {
 	@JoinColumn(name = "product_id")
 	private Product product;
 
-	@Column(nullable = false)
-	private Integer zone;
-
-	private Integer rowNumber;
-	private Integer shelfNumber;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "location_id", nullable = false)
+	private Location location;
 
 	private Integer expectedQuantity;
 	private Integer quantity;
