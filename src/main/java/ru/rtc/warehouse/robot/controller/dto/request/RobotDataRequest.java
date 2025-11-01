@@ -2,7 +2,7 @@ package ru.rtc.warehouse.robot.controller.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
-import ru.rtc.warehouse.robot.controller.dto.LocationDTO;
+import ru.rtc.warehouse.location.dto.LocationDTO;
 import ru.rtc.warehouse.robot.controller.dto.ScanResultDTO;
 
 
