@@ -4,9 +4,13 @@ spring:
   datasource:
     # 1) Если задан SPRING_DATASOURCE_URL — используем его.
     # 2) Иначе соберём URL из DB_HOST/DB_PORT (если есть) или дефолтов localhost:5433.
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${POSTGRES_DB:smart_warehouse}?sslmode=disable}
-    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+#    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${POSTGRES_DB:smart_warehouse}?sslmode=disable}
+#    username: ${SPRING_DATASOURCE_USERNAME}
+#    password: ${SPRING_DATASOURCE_PASSWORD}
+
+    url: jdbc:postgresql://localhost:5433/smart_warehouse
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   profiles:
     default: dev
@@ -27,7 +31,7 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/master-changelog-v1.1.yaml
     enabled: true
-
+    clear-checksums: true
 server:
   port: ${APP_PORT:8080}
 

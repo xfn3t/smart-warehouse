@@ -9,6 +9,8 @@ import ru.rtc.warehouse.inventory.common.QuickRange;
 
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -45,4 +47,30 @@ public class InventoryHistorySearchRequest {
     @ArraySchema(arraySchema = @Schema(description = "Коды роботов"),
             schema = @Schema(example = "RB-001"))
     private List<String> robots;
+
+    // Нормализация списков для @ParameterObject
+    public void setCategories(List<String> raw) {
+        this.categories = normalizeCommaAware(raw);
+    }
+
+    public void setRobots(List<String> raw) {
+        this.robots = normalizeCommaAware(raw);
+    }
+
+    // zones/statuses приходят уже типизированными — дополнительная нормализация не нужна
+
+    private static List<String> normalizeCommaAware(List<String> raw) {
+        if (raw == null) return null;
+        List<String> out = new ArrayList<>();
+        for (String item : raw) {
+            if (item == null) continue;
+            // разбиваем каждую строку по запятой и триммим элементы
+            Arrays.stream(item.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .forEach(out::add);
+        }
+        // Порядок сохраняется, дубликаты намеренно не удаляются
+        return out.isEmpty() ? null : out;
+    }
 }
