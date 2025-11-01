@@ -15,6 +15,13 @@ public class RobotProperties {
     private String wsRobotTopicPrefix = "/topic/dashboard/robot";
     private String wsWarehouseTopicPrefix = "/topic/dashboard/warehouse";
 
+    private String wsGlobalLocationsTopic = "/topic/dashboard/locations";
+
+    // префикс для per-warehouse location updates:
+    // итоговый путь будет: {wsWarehouseLocationsTopicPrefix}/{warehouseCode}/locations
+    // например: /topic/dashboard/warehouse/WH-01/locations
+    private String wsWarehouseLocationsTopicPrefix = "/topic/dashboard/warehouse"; 
+
     private int recentScansLimit = 5;
     private long heartbeatMillis = 5000;
     private long recentScansTtlDays = 7L;

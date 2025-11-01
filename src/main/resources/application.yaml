@@ -41,6 +41,12 @@ warehouse:
     ws-global-topic: "/topic/dashboard"
     ws-robot-topic-prefix: "/topic/dashboard/robot"
     ws-warehouse-topic-prefix: "/topic/dashboard/warehouse"
+    ws-global-locations-topic: "/topic/dashboard/locations"
+    ws-warehouse-locations-topic-prefix: "/topic/dashboard/warehouse"
     recent-scans-limit: 5
     heartbeat-millis: 5000
     recent-scans-ttl-days: 7
+  location:
+    heartbeat-millis: 600000
+    recent-threshold-minutes: 15
+    medium-threshold-minutes: 120
