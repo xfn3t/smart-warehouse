@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+
+/robot_emulator/test_data
