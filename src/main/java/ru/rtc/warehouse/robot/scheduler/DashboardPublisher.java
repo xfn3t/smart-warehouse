@@ -1,36 +1,36 @@
 package ru.rtc.warehouse.robot.scheduler;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.config.RobotProperties;
+import ru.rtc.warehouse.robot.dto.RobotUpdateDTO;
+import ru.rtc.warehouse.robot.dto.RobotUpdateDataDTO;
 import ru.rtc.warehouse.robot.model.Robot;
-import ru.rtc.warehouse.robot.repository.RobotRepository;
+import ru.rtc.warehouse.robot.service.RobotEntityService;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DashboardPublisher {
+public class DashboardPublisher { 
 
-    private final RobotRepository robotRepository;
-    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    private final RobotEntityService robotService;
+    private final StringRedisTemplate redisTemplate;
     private final RobotProperties robotProperties;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper; 
-
-    private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    private final ObjectMapper objectMapper;
 
     @Scheduled(fixedRateString = "${warehouse.robot.heartbeat-millis}")
     @Transactional(readOnly = true)
     public void publishHeartbeat() {
         try {
-            List<Robot> robots = robotRepository.findAll();
+            List<Robot> robots = robotService.findAll();
             for (Robot robot : robots) {
                 try {
                     if (robot.isDeleted()) continue;
@@ -53,7 +53,7 @@ public class DashboardPublisher {
         String redisKey = String.format(robotProperties.getRecentScansKeyTemplate(), robot.getCode());
 
         List<String> raw = redisTemplate.opsForList().range(redisKey, -robotProperties.getRecentScansLimit(), -1);
-        List<Map<String,Object>> recentScans = new ArrayList<>();
+        List<Object> recentScans = new ArrayList<>();
         if (raw != null && !raw.isEmpty()) {
             for (String s : raw) {
                 Map<String,Object> m = objectMapper.readValue(s, new TypeReference<Map<String,Object>>() {});
@@ -62,21 +62,20 @@ public class DashboardPublisher {
             Collections.reverse(recentScans);
         }
 
-        Map<String,Object> wsPayload = new HashMap<>();
-        wsPayload.put("type", "robot_update");
-        Map<String,Object> data = new HashMap<>();
-        data.put("robot_id", robot.getCode());
-        data.put("battery_level", robot.getBatteryLevel());
-        data.put("zone", robot.getCurrentZone());
-        data.put("row", robot.getCurrentRow());
-        data.put("shelf", robot.getCurrentShelf());
-        data.put("next_checkpoint", null);
-        data.put("timestamp", Objects.toString(robot.getLastUpdate(), ""));
-        data.put("recent_scans", recentScans);
+        RobotUpdateDataDTO data = new RobotUpdateDataDTO(
+                robot.getCode(),
+                robot.getBatteryLevel(),
+                robot.getLocation() != null ? robot.getLocation().getZone() : null,
+                robot.getLocation() != null ? robot.getLocation().getRow() : null,
+                robot.getLocation() != null ? robot.getLocation().getShelf() : null,
+                null,
+                Objects.toString(robot.getLastUpdate(), ""),
+                recentScans
+        );
 
-        wsPayload.put("data", data);
+        RobotUpdateDTO payload = new RobotUpdateDTO("robot_update", data);
 
-        String json = objectMapper.writeValueAsString(wsPayload);
+        String json = objectMapper.writeValueAsString(payload);
         redisTemplate.convertAndSend(robotProperties.getRedisChannel(), json);
     }
 }

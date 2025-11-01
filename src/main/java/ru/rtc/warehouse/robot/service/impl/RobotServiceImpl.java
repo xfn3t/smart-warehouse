@@ -3,9 +3,7 @@ package ru.rtc.warehouse.robot.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.rtc.warehouse.auth.service.RobotAuthService;
 import ru.rtc.warehouse.location.model.Location;
-import ru.rtc.warehouse.location.service.LocationEntityService;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.mapper.RobotMapper;
@@ -15,9 +13,10 @@ import ru.rtc.warehouse.robot.model.RobotStatus.StatusCode;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
 import ru.rtc.warehouse.robot.service.RobotService;
 import ru.rtc.warehouse.robot.service.RobotStatusService;
+import ru.rtc.warehouse.robot.service.adapter.RobotAuthAdapter;
+import ru.rtc.warehouse.robot.service.adapter.WarehouseAdapter;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
-import ru.rtc.warehouse.warehouse.service.WarehouseEntityService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,11 +27,11 @@ import java.util.List;
 public class RobotServiceImpl implements RobotService {
 
 	private final RobotMapper robotMapper;
-	private final RobotAuthService robotAuthService;
 	private final RobotEntityService robotEntityService;
 	private final RobotStatusService robotStatusService;
-	private final WarehouseEntityService warehouseEntityService;
-	private final LocationEntityService locationEntityService;
+
+	private final WarehouseAdapter warehouseAdapter;
+    private final RobotAuthAdapter robotAuthAdapter;
 
 	private String generateUniqueRobotId() {
 		Integer maxNumber = robotEntityService.findMaxRobotNumber();
@@ -49,7 +48,7 @@ public class RobotServiceImpl implements RobotService {
 
 		Robot robot = robotMapper.toEntity(req);
 
-		Warehouse warehouse = warehouseEntityService.findById(req.getWarehouseId());
+		Warehouse warehouse = warehouseAdapter.findById(req.getWarehouseId());
 		robot.setWarehouse(warehouse);
 
 		Location location = new Location();
@@ -71,7 +70,7 @@ public class RobotServiceImpl implements RobotService {
 		robot.setLastUpdate(LocalDateTime.now());
 
 		Robot saved = robotEntityService.saveAndFlush(robot); // должен возвращать сохранённый Robot
-		robotAuthService.createRobotToken(saved);
+		robotAuthAdapter.createRobotToken(saved);
 	}
 
 
@@ -98,7 +97,7 @@ public class RobotServiceImpl implements RobotService {
 			robot.getLocation().setShelf(updateRequest.getCurrentShelf());
 		}
 		if (updateRequest.getWarehouseId() != null) {
-			Warehouse warehouse = warehouseEntityService.findById(updateRequest.getWarehouseId());
+			Warehouse warehouse = warehouseAdapter.findById(updateRequest.getWarehouseId());
 			robot.setWarehouse(warehouse);
 			// Обновляем также warehouse в location
 			robot.getLocation().setWarehouse(warehouse);
