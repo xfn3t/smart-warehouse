@@ -32,4 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 
-/robot_emulator/test_data
+/robot_emulator/test
