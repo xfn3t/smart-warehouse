@@ -15,17 +15,17 @@ import jakarta.validation.constraints.NotNull;
 public class RobotStatusRequest {
 
     @NotBlank
-    private String robotId; // RB-001
+    private String robotId;
 
     @NotNull
     private Instant timestamp;
 
     @NotBlank
-    private String status; // CONNECTED | RECONNECTING | OFFLINE
+    private String status;
 
     @DecimalMin("0.0")
     @DecimalMax("100.0")
-    private Double batteryLevel;
+    private Integer batteryLevel;
 
     // optional
     private Instant lastDataSent;
