@@ -14,6 +14,7 @@ import ru.rtc.warehouse.robot.controller.dto.response.RobotDataResponse;
 import ru.rtc.warehouse.robot.service.RobotDataService;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -64,7 +65,9 @@ class RobotDataControllerTest {
         );
 
         UUID msgId = UUID.randomUUID();
-        when(robotDataService.processRobotData(any())).thenReturn(new RobotDataResponse("received", msgId));
+        List<UUID> msgIds = new ArrayList();
+        msgIds.add(msgId);
+        when(robotDataService.processRobotData(any())).thenReturn(new RobotDataResponse("received", msgIds));
 
         String json = objectMapper.writeValueAsString(request);
 
