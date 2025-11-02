@@ -3,7 +3,10 @@ package ru.rtc.warehouse.robot.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.location.repository.LocationRepository;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.mapper.RobotMapper;
@@ -17,6 +20,7 @@ import ru.rtc.warehouse.robot.service.adapter.RobotAuthAdapter;
 import ru.rtc.warehouse.robot.service.adapter.WarehouseAdapter;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
+import ru.rtc.warehouse.warehouse.service.LocationServiceAdapter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +36,8 @@ public class RobotServiceImpl implements RobotService {
 
 	private final WarehouseAdapter warehouseAdapter;
     private final RobotAuthAdapter robotAuthAdapter;
+
+	private final LocationRepository locationRepository;
 
 	private String generateUniqueRobotId() {
 		Integer maxNumber = robotEntityService.findMaxRobotNumber();
@@ -51,14 +57,14 @@ public class RobotServiceImpl implements RobotService {
 		Warehouse warehouse = warehouseAdapter.findById(req.getWarehouseId());
 		robot.setWarehouse(warehouse);
 
-		Location location = new Location();
-		location.setZone(req.getCurrentZone());
-		location.setRow(req.getCurrentRow());
-		location.setShelf(req.getCurrentShelf());
-		location.setWarehouse(warehouse);
+		Location location = locationRepository
+					.findByWarehouseAndZoneAndRowAndShelf(
+						warehouse, req.getCurrentZone(),
+						req.getCurrentRow(), req.getCurrentShelf())
+					.orElseThrow(() -> new NotFoundException("Location not found with provided coordinates"));;
+
 		robot.setLocation(location);
 
-		// гарантируем, что status — managed entity из БД
 		RobotStatus status;
 		if (req.getStatus() != null) {
 			status = robotStatusService.findByCode(StatusCode.from(req.getStatus()));
@@ -69,7 +75,7 @@ public class RobotServiceImpl implements RobotService {
 
 		robot.setLastUpdate(LocalDateTime.now());
 
-		Robot saved = robotEntityService.saveAndFlush(robot); // должен возвращать сохранённый Robot
+		Robot saved = robotEntityService.saveAndFlush(robot);
 		robotAuthAdapter.createRobotToken(saved);
 	}
 
@@ -99,7 +105,7 @@ public class RobotServiceImpl implements RobotService {
 		if (updateRequest.getWarehouseId() != null) {
 			Warehouse warehouse = warehouseAdapter.findById(updateRequest.getWarehouseId());
 			robot.setWarehouse(warehouse);
-			// Обновляем также warehouse в location
+
 			robot.getLocation().setWarehouse(warehouse);
 		}
 
