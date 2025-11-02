@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:54329/smart_warehouse_test
+    username: wh
+    password: whpwd
+  output:
+    ansi:
+      enabled: ALWAYS   # цвет в консоли (если поддерживается)
+  jpa:
+    show-sql: false
+    properties:
+      hibernate.format_sql: true      # форматирование SQL в несколько строк
+      hibernate.highlight_sql: true   # подсветка ANSI (приятнее читать)
+    hibernate:
+      ddl-auto: none   # или create-drop, если нет миграций
+  flyway:
+    enabled: true      # если используете миграции
+  test:
+    database:
+      replace: none    # чтобы Spring не подменил на H2
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:0b348a2ef3a6e14c893e99d430af74b9e4cf7a58bdf13dfe9a48d64f3db2f0e2}
+    access-token-exp-seconds: 86400000
+    refresh-token-exp-seconds: 1209600
+
+logging:
+  level:
+    root: warn
+
+    # Показываем только то, что реально нужно
+    ru.rtc.warehouse: info
+
+    # Глушим болтливые DEBUG от Spring MVC («Writing [[... (truncated)...]» и т.п.)
+    org.springframework.web: warn
+    org.springframework.web.servlet.mvc.method.annotation: warn
+
+    # SQL + бинды (Hibernate 6)
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
