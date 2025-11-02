@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.robot.controller.dto.response;
 
+import java.util.List;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -9,6 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RobotDataResponse {
     private String status; // "received"
-    private UUID messageId; // ID InventoryHistory
+    private List<UUID> messageId; // ID InventoryHistory
 }
 
