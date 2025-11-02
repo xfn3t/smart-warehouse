@@ -26,6 +26,6 @@ public class ScanResultDTO {
     private Integer quantity;
 
     @NotNull
-    private InventoryHistoryStatus status; // OK / LOW_STOCK / CRITICAL
+    private String statusCode; // OK / LOW_STOCK / CRITICAL
 }
 
