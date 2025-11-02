@@ -22,20 +22,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CsvProcessingServiceImpl implements CsvProcessingService {
 
+	@Override
 	public List<InventoryCsvDto> parseCsvFile(MultipartFile file) {
 		try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
 
-			// Используем стратегию с именами колонок вместо позиционной
 			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
 					new HeaderColumnNameTranslateMappingStrategy<>();
 			strategy.setType(InventoryCsvDto.class);
 
-			// Маппинг заголовков CSV на поля DTO
+			// Обновленный маппинг - убрали sku_code
 			Map<String, String> columnMapping = new HashMap<>();
-			columnMapping.put("sku_code", "skuCode");
 			columnMapping.put("name", "name");
 			columnMapping.put("category", "category");
-			columnMapping.put("location", "location"); // временно мапим на location
+			columnMapping.put("location", "location");
 			columnMapping.put("quantity", "quantity");
 			columnMapping.put("minStock", "minStock");
 			columnMapping.put("optimalStock", "optimalStock");
@@ -45,7 +44,7 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 					.withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true)
 					.withSeparator(';')
-					.withSkipLines(0) // не пропускаем строки, т.к. работаем с заголовками
+					.withSkipLines(0)
 					.build()
 					.parse();
 
@@ -61,28 +60,22 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 	}
 
 	private InventoryCsvDto processLocation(InventoryCsvDto dto) {
-		// Получаем location из временного поля
+		// Парсим location в формат "1-1-1" на zone, row, shelf
 		String location = dto.getLocation();
 		if (location != null && !location.isEmpty()) {
-			String[] parts = location.split("-");
-			if (parts.length >= 3) {
-				dto.setZone(parseInteger(parts[0]));
-				dto.setRow(parseInteger(parts[1]));
-				dto.setShelf(parseInteger(parts[2]));
+			try {
+				String[] parts = location.split("-");
+				if (parts.length == 3) {
+					dto.setZone(Integer.parseInt(parts[0].trim()));
+					dto.setRow(Integer.parseInt(parts[1].trim()));
+					dto.setShelf(Integer.parseInt(parts[2].trim()));
+				} else {
+					log.warn("Invalid location format: {}, expected format: zone-row-shelf", location);
+				}
+			} catch (NumberFormatException e) {
+				log.warn("Failed to parse location: {}", location, e);
 			}
 		}
-		// Очищаем временное поле
-		dto.setLocation(null);
 		return dto;
-	}
-
-	private Integer parseInteger(String value) {
-		if (value == null || value.trim().isEmpty()) return null;
-		try {
-			return Integer.parseInt(value.trim());
-		} catch (NumberFormatException e) {
-			log.warn("Failed to parse integer value: {}", value);
-			return null;
-		}
 	}
 }

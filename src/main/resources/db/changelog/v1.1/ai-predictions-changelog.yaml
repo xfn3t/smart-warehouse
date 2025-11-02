@@ -23,6 +23,12 @@ databaseChangeLog:
                     foreignKeyName: fk_ai_product
                     references: products(id)
               - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_ai_warehouse
+                    references: warehouses(id)
+              - column:
                   name: prediction_date
                   type: DATE
                   constraints:

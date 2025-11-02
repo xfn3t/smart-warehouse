@@ -18,4 +18,5 @@ public class ProductEntServiceAdapter {
 	public Product save(Product product) {
 		return productEntityService.save(product);
 	}
+
 }

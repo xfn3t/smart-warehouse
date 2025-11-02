@@ -1,6 +1,7 @@
 package ru.rtc.warehouse.warehouse.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -12,6 +13,7 @@ import ru.rtc.warehouse.warehouse.service.WarehouseEntityService;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WarehouseEntityServiceImpl implements WarehouseEntityService {
@@ -64,5 +66,46 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 						HttpStatus.NOT_FOUND,
 						"Склад не найден: " + warehouseCode
 				));
+	}
+
+
+	@Transactional(readOnly = true)
+	public List<Warehouse> findAllActiveWarehouses() {
+		log.info("Finding all active warehouses");
+
+		try {
+			return warehouseRepository.findAllActiveWarehouses();
+		} catch (Exception e) {
+			log.error("Error finding all active warehouses", e);
+			throw new RuntimeException("Failed to retrieve active warehouses", e);
+		}
+	}
+
+	@Transactional(readOnly = true)
+	public boolean existsByCode(String code) {
+		log.info("Checking if warehouse exists by code: {}", code);
+
+		try {
+			return warehouseRepository.findByCodeAndIsDeletedFalse(code).isPresent();
+		} catch (Exception e) {
+			log.error("Error checking warehouse existence by code: {}", code, e);
+			throw new RuntimeException("Failed to check warehouse existence", e);
+		}
+	}
+
+
+	@Transactional
+	public void softDelete(Long warehouseId) {
+		log.info("Soft deleting warehouse with ID: {}", warehouseId);
+
+		try {
+			Warehouse warehouse = findById(warehouseId);
+			warehouse.setDeleted(true);
+			warehouseRepository.save(warehouse);
+			log.info("Warehouse soft deleted with ID: {}", warehouseId);
+		} catch (Exception e) {
+			log.error("Error soft deleting warehouse with ID: {}", warehouseId, e);
+			throw new RuntimeException("Failed to soft delete warehouse", e);
+		}
 	}
 }

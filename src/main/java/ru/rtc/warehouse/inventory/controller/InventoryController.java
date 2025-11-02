@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.rtc.warehouse.inventory.service.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryService;
+import ru.rtc.warehouse.inventory.service.ProductLastInventoryService;
 
 @Slf4j
 @RestController
@@ -20,6 +21,8 @@ public class InventoryController {
 
 	private final CsvProcessingService csvProcessingService;
 	private final InventoryHistoryService ihs;
+	private final ProductLastInventoryService productLastInventoryService;
+
 
 	@Operation(summary = "Upload CSV file for inventory")
 	@PostMapping(value = "/upload-csv", consumes = "multipart/form-data")
@@ -38,5 +41,6 @@ public class InventoryController {
 					.body("Error processing file: " + e.getMessage());
 		}
 	}
+
 
 }

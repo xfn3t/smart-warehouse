@@ -130,4 +130,9 @@ public class RobotServiceImpl implements RobotService {
 	public void delete(Long id) {
 		robotEntityService.delete(id);
 	}
+
+	@Override
+	public List<RobotDTO> findAllByWarehouseCode(String warehouseCode) {
+		return robotMapper.toDtoList(robotEntityService.findAllByWarehouseCode(warehouseCode));
+	}
 }

@@ -13,4 +13,6 @@ public interface RobotService {
 	RobotDTO findById(Long id);
 	RobotDTO findByCode(String code);
 	void delete(Long id);
+
+	List<RobotDTO> findAllByWarehouseCode(String warehouseCode);
 }

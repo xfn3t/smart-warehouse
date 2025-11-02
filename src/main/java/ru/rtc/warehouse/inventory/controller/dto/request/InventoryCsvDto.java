@@ -12,7 +12,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class InventoryCsvDto {
-	private String skuCode;
 	private String name;
 	private String category;
 	private String location;
