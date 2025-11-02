@@ -31,7 +31,7 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/master-changelog-v1.1.yaml
     enabled: true
-
+    clear-checksums: true
 server:
   port: ${APP_PORT:8080}
 
