@@ -44,6 +44,33 @@ services:
       - "${APP_PORT}:8080"
     networks:
       - backend
+  emulator:
+    build:
+      context: ./robot_emulator
+      dockerfile: Dockerfile
+    container_name: robot-emulator
+    env_file: .env.dev
+    depends_on:
+      - postgres
+      - redis
+      - app
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      API_URL: http://app:8080
+
+      MODE: live
+      ROBOTS_COUNT: ${ROBOTS_COUNT:-4}
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL:-8}
+      STATUS_INTERVAL: ${STATUS_INTERVAL:-8}
+      ROBOT_AUTH_TOKEN: ${ROBOT_AUTH_TOKEN:-}
+    networks:
+      - backend
+    restart: unless-stopped
 
 volumes:
   postgres_data:

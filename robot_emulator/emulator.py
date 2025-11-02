@@ -32,7 +32,7 @@ STATUS_INTERVAL = float(os.getenv("STATUS_INTERVAL", str(max(5, UPDATE_INTERVAL)
 ROBOT_AUTH_TOKEN = os.getenv("ROBOT_AUTH_TOKEN", None)
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "63178"))
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 POSTGRES_DB = os.getenv("POSTGRES_DB", "smart_warehouse")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "warehouse_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "warehouse_pass")
