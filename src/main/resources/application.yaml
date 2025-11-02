@@ -17,7 +17,7 @@ spring:
     port: ${SPRING_REDIS_PORT}
 
   liquibase:
-    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    change-log: classpath:db/changelog/master-changelog-v1.2.5.yaml
     enabled: true
 
 server:

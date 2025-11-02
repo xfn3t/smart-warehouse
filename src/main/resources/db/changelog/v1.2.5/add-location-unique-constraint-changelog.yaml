@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-location-unique-constraint
+      author: dev
+      changes:
+        - addUniqueConstraint:
+            tableName: location
+            columnNames: warehouse_id, zone, row, shelf
+            constraintName: uq_location_coords

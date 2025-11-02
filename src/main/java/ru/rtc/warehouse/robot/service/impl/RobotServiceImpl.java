@@ -83,30 +83,24 @@ public class RobotServiceImpl implements RobotService {
 	@Override
 	public void update(RobotUpdateRequest updateRequest, Long id) {
 		Robot robot = robotEntityService.findById(id);
+		Warehouse warehouse = robot.getWarehouse();
 
-		if (updateRequest.getCode() != null) {
-			robot.setCode(updateRequest.getCode());
-		}
-		if (updateRequest.getStatus() != null) {
-			robot.setStatus(robotStatusService.findByCode(StatusCode.from(updateRequest.getStatus())));
-		}
-		if (updateRequest.getBatteryLevel() != null) {
-			robot.setBatteryLevel(updateRequest.getBatteryLevel());
-		}
-		if (updateRequest.getCurrentZone() != null) {
-			robot.getLocation().setZone(updateRequest.getCurrentZone());
-		}
-		if (updateRequest.getCurrentRow() != null) {
-			robot.getLocation().setRow(updateRequest.getCurrentRow());
-		}
-		if (updateRequest.getCurrentShelf() != null) {
-			robot.getLocation().setShelf(updateRequest.getCurrentShelf());
-		}
-		if (updateRequest.getWarehouseId() != null) {
-			Warehouse warehouse = warehouseAdapter.findById(updateRequest.getWarehouseId());
-			robot.setWarehouse(warehouse);
+		if (updateRequest.getCurrentZone() != null || 
+			updateRequest.getCurrentRow() != null || 
+			updateRequest.getCurrentShelf() != null) {
+			
+			Integer zone = updateRequest.getCurrentZone() != null ? 
+				updateRequest.getCurrentZone() : robot.getLocation().getZone();
+			Integer row = updateRequest.getCurrentRow() != null ? 
+				updateRequest.getCurrentRow() : robot.getLocation().getRow();
+			Integer shelf = updateRequest.getCurrentShelf() != null ? 
+				updateRequest.getCurrentShelf() : robot.getLocation().getShelf();
 
-			robot.getLocation().setWarehouse(warehouse);
+			Location newLocation = locationRepository
+				.findByWarehouseAndZoneAndRowAndShelf(warehouse, zone, row, shelf)
+				.orElseThrow(() -> new NotFoundException("Location not found with new coordinates"));
+			
+			robot.setLocation(newLocation);
 		}
 
 		robot.setLastUpdate(LocalDateTime.now());

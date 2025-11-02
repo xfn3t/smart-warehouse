@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-robot-location-fk-constraint
+      author: dev
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: robots
+            constraintName: fk_location
+        
+        - addForeignKeyConstraint:
+            baseTableName: robots
+            baseColumnNames: location_id
+            constraintName: fk_robot_location
+            referencedTableName: location
+            referencedColumnNames: id
+            onDelete: SET NULL
+
+  - changeSet:
+      id: fix-inventory-location-fk-constraint
+      author: dev
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: inventory_history
+            constraintName: fk_location
+        
+        - addForeignKeyConstraint:
+            baseTableName: inventory_history
+            baseColumnNames: location_id
+            constraintName: fk_inventory_location
+            referencedTableName: location
+            referencedColumnNames: id
+            onDelete: CASCADE

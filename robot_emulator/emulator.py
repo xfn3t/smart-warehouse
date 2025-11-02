@@ -602,18 +602,32 @@ class RobotWorker(threading.Thread):
                     pass
 
     def post_status(self):
+        # Форматируем timestamp для Java Instant
+        from datetime import datetime
+        current_time = datetime.now(timezone.utc)
+        timestamp_iso = current_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        
         payload = {
             "robotId": self.robot_code,
-            "timestamp": now_iso(),
+            "timestamp": timestamp_iso,
             "status": "WORKING" if self.battery > 20 else "CHARGING",
-            "batteryLevel": int(round(self.battery)),
-            "lastDataSent": self.last_data_sent  # либо None, либо ISO-строка с Z
+            "batteryLevel": int(round(self.battery))
         }
+        
+        # Добавляем lastDataSent только если он есть
+        if self.last_data_sent:
+            # Конвертируем в правильный формат для Java Instant
+            last_sent_dt = datetime.fromisoformat(self.last_data_sent.replace('Z', '+00:00'))
+            last_sent_iso = last_sent_dt.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+            payload["lastDataSent"] = last_sent_iso
 
         token = self.token or ROBOT_AUTH_TOKEN
         ok = self.api.post_robot_status(self.robot_code, payload, token)
         if not ok:
             log(f"{self.robot_code} failed to post status")
+            # Добавим больше информации для отладки
+            log(f"Status payload: {payload}")
+            log(f"Using token: {'Yes' if token else 'No'}")
 
 # -----------------------
 # Runner

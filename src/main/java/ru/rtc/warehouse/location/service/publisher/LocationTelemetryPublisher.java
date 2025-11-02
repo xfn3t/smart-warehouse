@@ -19,17 +19,14 @@ public class LocationTelemetryPublisher {
     private final ObjectMapper objectMapper;
     private final RobotProperties robotProperties;
 
-    // TTL для кеша — настроить в свойствах при желании
     private final Duration CACHE_TTL = Duration.ofHours(6);
 
     public void publish(LocationMetricsDTO dto) {
         try {
             Map<String,Object> payload = Map.of("type", "location_update", "data", dto);
             String json = objectMapper.writeValueAsString(payload);
-            // publish to redis channel (existing channel)
             redisTemplate.convertAndSend(robotProperties.getRedisChannel(), json);
 
-            // write per-location cache for REST snapshot / fast read
             String key = buildCacheKey(dto.getWarehouseCode(), dto.getZone(), dto.getRow(), dto.getShelf());
             redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(dto), CACHE_TTL);
         } catch (JsonProcessingException e) {
