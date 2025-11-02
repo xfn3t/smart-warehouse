@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-robots
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: robots
+      changes:
+        - createTable:
+            tableName: robots
+            remarks: Складские роботы
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: robot_code
+                  type: VARCHAR(50)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_robot_warehouse
+                    references: warehouses(id)
+              - column:
+                  name: status_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_robot_status
+                    references: robot_status(id)
+              - column:
+                  name: battery_level
+                  type: INTEGER
+              - column:
+                  name: last_update
+                  type: TIMESTAMP
+              - column:
+                  name: location_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_location
+                    references: location(id)
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false

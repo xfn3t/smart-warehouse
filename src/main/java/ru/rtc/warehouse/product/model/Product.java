@@ -2,7 +2,6 @@ package ru.rtc.warehouse.product.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.UUID;
 
 @Entity
 @Table(name = "products")
@@ -26,10 +25,15 @@ public class Product {
 	@Column(length = 100)
 	private String category;
 
-	@Column(nullable = false)
+	@Column(name = "min_stock", nullable = false)
+	@Builder.Default
 	private Integer minStock = 10;
 
-	@Column(nullable = false)
+	@Column(name = "optimal_stock", nullable = false)
+	@Builder.Default
 	private Integer optimalStock = 100;
 
+	@Column(name = "is_deleted", nullable = false)
+	@Builder.Default
+	private boolean isDeleted = false;
 }

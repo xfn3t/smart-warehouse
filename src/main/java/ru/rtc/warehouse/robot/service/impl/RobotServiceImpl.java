@@ -2,87 +2,126 @@ package ru.rtc.warehouse.robot.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
+import org.springframework.transaction.annotation.Transactional;
+import ru.rtc.warehouse.auth.service.RobotAuthService;
+import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.location.service.LocationEntityService;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.mapper.RobotMapper;
 import ru.rtc.warehouse.robot.model.Robot;
+import ru.rtc.warehouse.robot.model.RobotStatus;
+import ru.rtc.warehouse.robot.model.RobotStatus.StatusCode;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
 import ru.rtc.warehouse.robot.service.RobotService;
+import ru.rtc.warehouse.robot.service.RobotStatusService;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
+import ru.rtc.warehouse.warehouse.model.Warehouse;
+import ru.rtc.warehouse.warehouse.service.WarehouseEntityService;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class RobotServiceImpl implements RobotService {
 
 	private final RobotMapper robotMapper;
+	private final RobotAuthService robotAuthService;
 	private final RobotEntityService robotEntityService;
+	private final RobotStatusService robotStatusService;
+	private final WarehouseEntityService warehouseEntityService;
+	private final LocationEntityService locationEntityService;
 
 	private String generateUniqueRobotId() {
 		Integer maxNumber = robotEntityService.findMaxRobotNumber();
 		int nextNumber = (maxNumber != null ? maxNumber : 0) + 1;
-
 		return String.format("RB-%04d", nextNumber);
 	}
 
-	public void save(RobotCreateRequest robotCreateRequest) {
-		if (robotCreateRequest.getCode() == null) {
-			robotCreateRequest.setCode(generateUniqueRobotId());
-		}
-		Robot robot = robotMapper.toEntity(robotCreateRequest);
-		robotEntityService.save(robot);
-	}
-
 	@Override
-	public void update(RobotUpdateRequest updateRequest, Long id) {
+	@Transactional
+	public void save(RobotCreateRequest req) {
+		if (req.getCode() == null) {
+			req.setCode(generateUniqueRobotId());
+		}
 
-		Robot robot = robotEntityService.findById(id);
+		Robot robot = robotMapper.toEntity(req);
 
-		String code = updateRequest.getCode();
-		RobotStatus status = updateRequest.getStatus();
-		Integer batteryLevel = updateRequest.getBatteryLevel();
-		String currentZone = updateRequest.getCurrentZone();
-		Integer currentRow = updateRequest.getCurrentRow();
-		Integer currentShelf = updateRequest.getCurrentShelf();
+		Warehouse warehouse = warehouseEntityService.findById(req.getWarehouseId());
+		robot.setWarehouse(warehouse);
 
-		if (code != null) {
-			robot.setCode(code);
+		Location location = new Location();
+		location.setZone(req.getCurrentZone());
+		location.setRow(req.getCurrentRow());
+		location.setShelf(req.getCurrentShelf());
+		location.setWarehouse(warehouse);
+		robot.setLocation(location);
+
+		// гарантируем, что status — managed entity из БД
+		RobotStatus status;
+		if (req.getStatus() != null) {
+			status = robotStatusService.findByCode(StatusCode.from(req.getStatus()));
+		} else {
+			status = robotStatusService.findByCode(StatusCode.IDLE);
 		}
-		if (status != null) {
-			robot.setStatus(status);
-		}
-		if (batteryLevel != null) {
-			robot.setBatteryLevel(batteryLevel);
-		}
-		if (currentZone != null) {
-			robot.setCurrentZone(currentZone);
-		}
-		if (currentRow != null) {
-			robot.setCurrentRow(currentRow);
-		}
-		if (currentShelf != null) {
-			robot.setCurrentShelf(currentShelf);
-		}
+		robot.setStatus(status);
 
 		robot.setLastUpdate(LocalDateTime.now());
 
+		Robot saved = robotEntityService.saveAndFlush(robot); // должен возвращать сохранённый Robot
+		robotAuthService.createRobotToken(saved);
+	}
+
+
+	@Override
+	public void update(RobotUpdateRequest updateRequest, Long id) {
+		Robot robot = robotEntityService.findById(id);
+
+		if (updateRequest.getCode() != null) {
+			robot.setCode(updateRequest.getCode());
+		}
+		if (updateRequest.getStatus() != null) {
+			robot.setStatus(robotStatusService.findByCode(StatusCode.from(updateRequest.getStatus())));
+		}
+		if (updateRequest.getBatteryLevel() != null) {
+			robot.setBatteryLevel(updateRequest.getBatteryLevel());
+		}
+		if (updateRequest.getCurrentZone() != null) {
+			robot.getLocation().setZone(updateRequest.getCurrentZone());
+		}
+		if (updateRequest.getCurrentRow() != null) {
+			robot.getLocation().setRow(updateRequest.getCurrentRow());
+		}
+		if (updateRequest.getCurrentShelf() != null) {
+			robot.getLocation().setShelf(updateRequest.getCurrentShelf());
+		}
+		if (updateRequest.getWarehouseId() != null) {
+			Warehouse warehouse = warehouseEntityService.findById(updateRequest.getWarehouseId());
+			robot.setWarehouse(warehouse);
+			// Обновляем также warehouse в location
+			robot.getLocation().setWarehouse(warehouse);
+		}
+
+		robot.setLastUpdate(LocalDateTime.now());
 		robotEntityService.update(robot);
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<RobotDTO> findAll() {
 		return robotMapper.toDtoList(robotEntityService.findAll());
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public RobotDTO findById(Long id) {
 		return robotMapper.toDto(robotEntityService.findById(id));
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public RobotDTO findByCode(String code) {
 		return robotMapper.toDto(robotEntityService.findByCode(code));
 	}
@@ -92,4 +131,8 @@ public class RobotServiceImpl implements RobotService {
 		robotEntityService.delete(id);
 	}
 
+	@Override
+	public List<RobotDTO> findAllByWarehouseCode(String warehouseCode) {
+		return robotMapper.toDtoList(robotEntityService.findAllByWarehouseCode(warehouseCode));
+	}
 }

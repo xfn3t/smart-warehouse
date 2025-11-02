@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-inventory-statuses
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: inventory_status
+      changes:
+        - createTable:
+            tableName: inventory_status
+            remarks: Статусы записей инвентаризации
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    unique: true
+                    nullable: false
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+
+        - insert:
+            tableName: inventory_status
+            columns:
+              - column:
+                  name: code
+                  value: OK
+        - insert:
+            tableName: inventory_status
+            columns:
+              - column:
+                  name: code
+                  value: LOW_STOCK
+        - insert:
+            tableName: inventory_status
+            columns:
+              - column:
+                  name: code
+                  value: CRITICAL

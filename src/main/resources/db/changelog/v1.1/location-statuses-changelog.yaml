@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-location-status
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: location_status
+      changes:
+        - createTable:
+            tableName: location_status
+            remarks: Статусы локаций
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    unique: true
+                    nullable: false
+
+        - insert:
+            tableName: location_status
+            columns:
+              - column:
+                  name: code
+                  value: OLD
+        - insert:
+            tableName: location_status
+            columns:
+              - column:
+                  name: code
+                  value: MEDIUM
+        - insert:
+            tableName: location_status
+            columns:
+              - column:
+                  name: code
+                  value: RECENT

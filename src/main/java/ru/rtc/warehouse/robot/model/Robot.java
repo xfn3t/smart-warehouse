@@ -2,7 +2,8 @@ package ru.rtc.warehouse.robot.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import ru.rtc.warehouse.robot.common.enums.RobotStatus;
+import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 
@@ -22,18 +23,24 @@ public class Robot {
 	@Column(name = "robot_code", length = 50, nullable = false, unique = true)
 	private String code;
 
-	@Enumerated(EnumType.STRING)
-	@Column(length = 50, nullable = false)
-	private RobotStatus status = RobotStatus.ACTIVE;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "warehouse_id", nullable = false)
+	private Warehouse warehouse;
 
+	@ManyToOne(optional = false, cascade = CascadeType.MERGE)
+	@JoinColumn(name = "status_id", nullable = false)
+	private RobotStatus status;
+
+	@Column(name = "battery_level")
 	private Integer batteryLevel;
 
+	@Column(name = "last_update")
 	private LocalDateTime lastUpdate;
 
-	@Column(length = 10)
-	private String currentZone;
+	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "location_id", nullable = false)
+	private Location location;
 
-	private Integer currentRow;
-	private Integer currentShelf;
-
+	@Column(name = "is_deleted", nullable = false)
+	private boolean isDeleted = false;
 }

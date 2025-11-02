@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import ru.rtc.warehouse.user.model.Role;
 import ru.rtc.warehouse.user.model.User;
 
 @Getter
@@ -25,5 +26,5 @@ public class RegisterRequest {
 	@NotNull(message = "Name can't be null")
 	private String name;
 
-	private User.Role role;
+	private String role;
 }

@@ -9,9 +9,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - backend
 
@@ -29,21 +34,32 @@ services:
     container_name: ${APP_NAME}
     restart: always
     env_file: .env.dev
-    depends_on:
-      - postgres
-      - redis
+    depends_on: [ postgres, redis ]
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:${POSTGRES_PORT}/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: 5432
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: ${REDIS_PORT}
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "${APP_PORT}:8080"
+    networks: [ backend ]
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    container_name: ai-service
+    restart: always
+    ports:
+      - "8001:8001"
+    env_file: .env.dev
     networks:
       - backend
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres_data:

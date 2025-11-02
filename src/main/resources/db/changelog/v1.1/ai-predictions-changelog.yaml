@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-ai-predictions
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: ai_predictions
+      changes:
+        - createTable:
+            tableName: ai_predictions
+            remarks: Прогнозы ИИ
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_ai_product
+                    references: products(id)
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_ai_warehouse
+                    references: warehouses(id)
+              - column:
+                  name: prediction_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: days_until_stockout
+                  type: INTEGER
+              - column:
+                  name: recommended_order
+                  type: INTEGER
+              - column:
+                  name: confidence_score
+                  type: DECIMAL(3,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false

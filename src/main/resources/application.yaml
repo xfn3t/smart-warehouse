@@ -1,11 +1,20 @@
 spring:
   application:
     name: warehouse
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+      url: ${SPRING_DATASOURCE_URL}
+      username: ${SPRING_DATASOURCE_USERNAME}
+      password: ${SPRING_DATASOURCE_PASSWORD}
+  profiles:
+    default: dev
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -13,11 +22,22 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   redis:
-    host: ${SPRING_REDIS_HOST}
-    port: ${SPRING_REDIS_PORT}
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    lettuce:
+      pool:
+        enabled: true
+
+  liquibase:
+    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    enabled: true
 
 server:
-  port: ${APP_PORT}
+  port: ${APP_PORT:8080}
+
+ml:
+  api:
+    url: http://ai-service:8001
 
 security:
   jwt:
@@ -29,3 +49,9 @@ logging:
   level:
     root: INFO
     org.springframework.web: DEBUG
+
+app:
+  dashboard:
+    ttl:
+      minute-series-seconds: 4000      # ~66 минут для поминутной серии
+      checked-day-days: 3              # ежедневно – хранить 3 дня

@@ -5,4 +5,6 @@ import ru.rtc.warehouse.product.model.Product;
 
 public interface ProductEntityService extends CrudEntityService<Product, Long> {
 	Product findByCode(String code);
+
+//	Integer getProductsCountByWarehouse(Long id);
 }
