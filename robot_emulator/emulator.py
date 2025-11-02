@@ -32,7 +32,7 @@ STATUS_INTERVAL = float(os.getenv("STATUS_INTERVAL", str(max(5, UPDATE_INTERVAL)
 ROBOT_AUTH_TOKEN = os.getenv("ROBOT_AUTH_TOKEN", None)
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "63178"))
 POSTGRES_DB = os.getenv("POSTGRES_DB", "smart_warehouse")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "warehouse_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "warehouse_pass")
@@ -47,7 +47,9 @@ LOG_PREFIX = "[EMU-DB]"
 # Util
 # -----------------------
 def now_iso():
-    return datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+    # Возвращаем ISO-строку в UTC с суффиксом 'Z' (пример: 2025-11-02T11:46:09.302621Z)
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
 
 def log(*args, **kwargs):
     print(LOG_PREFIX, *args, **kwargs)
@@ -400,7 +402,7 @@ class EmulatorManager:
                     L["products"] = [{"sku_code": random.choice(skus), "name": f"Product {i}", "quantity": random.randint(1,50)}]
             self.locations_by_wh[code] = locs
             count = ROBOTS_COUNT or 4
-            self.robots = [{"robot_code": f"RB-EMU-{i+1:03d}", "warehouse_code": code} for i in range(count)]
+            self.robots = [{"robot_code": f"RB-EMU-{i+1:04d}", "warehouse_code": code} for i in range(count)]
             log(f"Offline: created {code} locations={len(locs)} robots={len(self.robots)}")
 
     def _fabricate_locations(self, code, zones, rows, shelves):
@@ -473,7 +475,7 @@ class RobotWorker(threading.Thread):
                     log(f"{self.robot_code} low battery -> charging")
                     time.sleep(2 * self.update_interval)
                     self.battery = 100.0
-                time.sleep(self.update_interval)
+                time.sleep(self.update_interval * random.uniform(0.85, 1.25))
             except Exception as e:
                 log(f"Worker {self.robot_code} error: {e}\n{traceback.format_exc()}")
                 time.sleep(max(1, self.update_interval))
@@ -500,32 +502,67 @@ class RobotWorker(threading.Thread):
             else:
                 products = location.get("products", [])
 
+              # ============ build scan_results compatible with RobotDataRequest / ScanResultDTO ============
             scan_results = []
             if not products:
                 if random.random() < 0.02:
                     sku = f"SKU-FP-{random.randint(1000,9999)}"
-                    scan_results.append({"productCode": sku, "productName": f"FP {sku}", "quantity": random.randint(1,5), "status":"UNKNOWN"})
+                    scan_results.append({
+                        "productCode": sku,
+                        "productName": f"FP {sku}",
+                        "quantity": random.randint(1,5),
+                        # server now expects statusCode as string in DTO
+                        "statusCode": "OK"
+                    })
             else:
                 for p in products:
-                    sku = p.get("sku_code") or p.get("skuCode") or p.get("product_id") or p.get("productCode")
+                    sku = p.get("sku_code") or p.get("skuCode") or p.get("product_id") or str(p.get("id", "UNKNOWN"))
                     name = p.get("name", "unknown")
-                    base_q = p.get("quantity", random.randint(1, 100))
+                    base_q = int(p.get("quantity", random.randint(1, 100)) or 0)
                     q = base_q
                     r = random.random()
                     if r < SIM_P_MISSING:
                         q = 0
-                        status = "CRITICAL"
+                        status_code = "CRITICAL"
                     elif r < SIM_P_MISSING + SIM_P_SWAPPED:
-                        fake_sku = str(sku) + "-SWAP"
-                        scan_results.append({"productCode": fake_sku, "productName": name + " (swapped)", "quantity": random.randint(1,10), "status":"OK"})
+                        fake_sku = f"{sku}-SWAP"
+                        scan_results.append({
+                            "productCode": fake_sku,
+                            "productName": name + " (swapped)",
+                            "quantity": int(max(0, random.randint(1,10))),
+                            "statusCode": "OK"
+                        })
                         continue
                     elif r < SIM_P_MISSING + SIM_P_SWAPPED + SIM_P_COUNT_ERROR:
-                        delta = int(max(0, base_q * (random.uniform(-0.2, 0.2))))
+                        delta = int(max(-base_q, base_q * random.uniform(-0.2, 0.2)))
                         q = max(0, base_q + delta)
-                        status = "LOW_STOCK" if q < 10 else "OK"
+                        status_code = "LOW_STOCK" if q < 10 else "OK"
                     else:
-                        status = "OK" if q > 20 else ("LOW_STOCK" if q > 5 else "CRITICAL")
-                    scan_results.append({"productCode": sku, "productName": name, "quantity": int(q), "status": status})
+                        status_code = "OK" if q > 20 else ("LOW_STOCK" if q > 5 else "CRITICAL")
+
+                    scan_results.append({
+                        "productCode": sku,
+                        "productName": name,
+                        "quantity": int(q),
+                        # send statusCode string to match new ScanResultDTO
+                        "statusCode": status_code
+                    })
+
+            # ============ prepare payload matching RobotDataRequest exactly ============
+            next_checkpoint = location.get("id") or f"{location.get('zone',0)}-{location.get('row',0)}-{location.get('shelf',0)}"
+
+            payload = {
+                "code": self.robot_code,               # server expects "code" matching RB-\d{4}
+                "timestamp": now_iso(),                # ISO with Z
+                "location": {
+                    "zone": int(location.get("zone", 0)),
+                    "row": int(location.get("row", 0)),
+                    "shelf": int(location.get("shelf", 0))
+                },
+                "scanResults": scan_results,
+                "batteryLevel": int(round(self.battery)),
+                "nextCheckpoint": str(next_checkpoint)
+            }
 
             # ensure we have a token (try DB if not provided)
             token = self.token
@@ -537,27 +574,16 @@ class RobotWorker(threading.Thread):
                 except Exception:
                     pass
 
-            payload = {
-                "type": "scan",
-                "data": {
-                    "robot_id": self.robot_code,
-                    "warehouseCode": self.warehouse_code,
-                    "location": {
-                        "zone": int(location.get("zone", 0)),
-                        "row": int(location.get("row", 0)),
-                        "shelf": int(location.get("shelf", 0)),
-                        "locationId": location.get("id")
-                    },
-                    "scanResults": scan_results,
-                    "batteryLevel": int(round(self.battery)),
-                    "timestamp": now_iso()
-                }
-            }
             ok = self.api.post_robot_data(self.robot_code, payload, token or ROBOT_AUTH_TOKEN)
             if ok:
                 log(f"{self.robot_code} scanned {location.get('zone')}-{location.get('row')}-{location.get('shelf')} -> {len(scan_results)}")
             else:
-                log(f"{self.robot_code} failed to post scan for {location.get('id')}")
+                # временно логируем payload для отладки
+                try:
+                    log(f"{self.robot_code} failed to post scan for {location.get('id')}; payload={payload}")
+                except Exception:
+                    log(f"{self.robot_code} failed to post scan for {location.get('id')}")
+
         except Exception as e:
             log(f"{self.robot_code} scan_and_post error: {e}\n{traceback.format_exc()}")
         finally:
@@ -581,8 +607,9 @@ class RobotWorker(threading.Thread):
             "timestamp": now_iso(),
             "status": "WORKING" if self.battery > 20 else "CHARGING",
             "batteryLevel": int(round(self.battery)),
-            "lastDataSent": self.last_data_sent
+            "lastDataSent": self.last_data_sent  # либо None, либо ISO-строка с Z
         }
+
         token = self.token or ROBOT_AUTH_TOKEN
         ok = self.api.post_robot_status(self.robot_code, payload, token)
         if not ok:
@@ -605,7 +632,7 @@ def main():
             rlist = []
             for i in range(ROBOTS_COUNT):
                 wc = wh_codes[i % len(wh_codes)]
-                rlist.append({"robot_code": f"RB-FAKE-{i+1:03d}", "warehouse_code": wc})
+                rlist.append({"robot_code": f"RB-FAKE-{i+1:04d}", "warehouse_code": wc})
             manager.robots = rlist
 
     manager.plan_routes()
