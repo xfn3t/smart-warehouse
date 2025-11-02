@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:15
@@ -9,11 +11,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,26 +27,37 @@ services:
     container_name: redis-warehouse
     restart: always
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${REDIS_PORT:-6379}:6379"
     networks:
       - backend
 
   app:
     build: .
-    container_name: ${APP_NAME}
+    container_name: ${APP_NAME:-warehouse-app}
     restart: always
     env_file: .env.dev
-    depends_on: [ postgres, redis ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE}
-      DB_HOST: postgres
-      DB_PORT: 5433
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-dev}
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
       SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: ${REDIS_PORT}
-      JWT_SECRET: ${JWT_SECRET}
+      SPRING_REDIS_PORT: ${REDIS_PORT:-6379}
+
+      JWT_SECRET: ${JWT_SECRET:-secret-key}
+
+      ML_API_URL: http://ai-service:8001
     ports:
-      - "${APP_PORT}:8080"
-    networks: [ backend ]
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - backend
 
   ai-service:
     build:
@@ -55,11 +68,39 @@ services:
     ports:
       - "8001:8001"
     env_file: .env.dev
-    networks:
-      - backend
     depends_on:
       - postgres
       - redis
+    networks:
+      - backend
+
+  emulator:
+    build:
+      context: ./robot_emulator
+      dockerfile: Dockerfile
+    container_name: robot-emulator
+    env_file: .env.dev
+    depends_on:
+      - postgres
+      - redis
+      - app
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      API_URL: http://app:8080
+
+      MODE: live
+      ROBOTS_COUNT: ${ROBOTS_COUNT:-4}
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL:-8}
+      STATUS_INTERVAL: ${STATUS_INTERVAL:-8}
+      ROBOT_AUTH_TOKEN: ${ROBOT_AUTH_TOKEN:-}
+    networks:
+      - backend
+    restart: unless-stopped
 
 volumes:
   postgres_data:

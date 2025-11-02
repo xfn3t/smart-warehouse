@@ -8,6 +8,7 @@ import ru.rtc.warehouse.auth.util.JwtUtil;
 import ru.rtc.warehouse.robot.model.Robot;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -19,7 +20,7 @@ public class RobotAuthService {
 
 	public RobotToken createRobotToken(Robot robot) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", "ROBOT");
+		claims.put("roles", List.of("ROBOT"));
 		claims.put("warehouse_id", robot.getWarehouse().getId());
 		claims.put("robot_code", robot.getCode());
 

@@ -39,7 +39,7 @@ public class LocationEntityServiceImpl implements LocationEntityService {
 
 	@Override
 	public void delete(Long id) {
-		repository.deleteById(id);
+		//repository.deleteById(id);
 	}
 
 	@Override

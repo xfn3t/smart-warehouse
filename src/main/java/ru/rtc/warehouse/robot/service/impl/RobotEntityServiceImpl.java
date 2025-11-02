@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
-import ru.rtc.warehouse.report.dto.RobotScanDto;
-import ru.rtc.warehouse.report.dto.RobotStatisticsDto;
 import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.robot.repository.RobotRepository;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
@@ -67,42 +65,6 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 		robotRepository.deleteById(id);
 	}
 
-	@Transactional(readOnly = true)
-	public RobotStatisticsDto getRobotStatistics(Long warehouseId) {
-		log.info("Getting robot statistics for warehouse: {}", warehouseId);
-
-		try {
-			RobotStatisticsDto stats = new RobotStatisticsDto();
-
-			List<Robot> robots = robotRepository.findByWarehouseIdAndIsDeletedFalse(warehouseId);
-
-			stats.setTotalRobots(robots.size());
-
-			long activeRobotsCount = robots.stream()
-					.filter(robot -> "WORKING".equals(robot.getStatus().getCode()))
-					.count();
-			stats.setActiveRobots((int) activeRobotsCount);
-			stats.setInactiveRobots(stats.getTotalRobots() - stats.getActiveRobots());
-
-			stats.setEfficiency(calculateEfficiency(stats));
-
-			LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
-			List<Object[]> scanCounts = inventoryHistoryRepository.findScanCountsByRobotAndPeriod(
-					weekAgo, LocalDateTime.now());
-
-			stats.setScansPerRobot(createRobotScanData(robots, scanCounts));
-
-			log.info("Robot statistics retrieved: total={}, active={}, efficiency={}%",
-					stats.getTotalRobots(), stats.getActiveRobots(), stats.getEfficiency());
-
-			return stats;
-
-		} catch (Exception e) {
-			log.error("Error getting robot statistics for warehouse: {}", warehouseId, e);
-			throw new RuntimeException("Failed to retrieve robot statistics", e);
-		}
-	}
-
 	@Override
 	public List<Robot> findAllByWarehouseCode(String warehouseCode) {
 		return robotRepository.findAllByWarehouseCode(warehouseCode);
@@ -146,29 +108,4 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 		}
 	}
 
-	private Double calculateEfficiency(RobotStatisticsDto stats) {
-		if (stats.getTotalRobots() == 0) {
-			return 0.0;
-		}
-		return Math.round((double) stats.getActiveRobots() / stats.getTotalRobots() * 100 * 100.0) / 100.0;
-	}
-
-	private List<RobotScanDto> createRobotScanData(List<Robot> robots, List<Object[]> scanCounts) {
-		return robots.stream().map(robot -> {
-			RobotScanDto dto = new RobotScanDto();
-			dto.setRobotCode(robot.getCode());
-			dto.setStatus(robot.getStatus().getCode().toString());
-			dto.setBatteryLevel(robot.getBatteryLevel());
-			dto.setLastUpdate(robot.getLastUpdate());
-
-			Long scanCount = scanCounts.stream()
-					.filter(count -> count[0].equals(robot.getId()))
-					.findFirst()
-					.map(count -> (Long) count[1])
-					.orElse(0L);
-
-			dto.setScanCount(scanCount);
-			return dto;
-		}).collect(Collectors.toList());
-	}
 }

@@ -275,5 +275,17 @@ public interface InventoryHistoryRepository extends
 	""")
 	List<LowStockProductDTO> findLowStockProductsByWarehouse(@Param("warehouseCode") String warehouseCode);
 
+   Optional<InventoryHistory> findFirstByProduct_CodeAndLocationAndWarehouseOrderByScannedAtDesc(String skuCode, Location location, Warehouse warehouse);
+
+   // последние N записей для локации
+   List<InventoryHistory> findTopNByLocationAndWarehouseOrderByScannedAtDesc(Location location, Warehouse warehouse, Pageable pageable);
+   // JPA не поддерживает findTopNBy... автоматически with dynamic N, поэтому используем PageRequest.of(0, N)
+   List<InventoryHistory> findByLocationAndWarehouseOrderByScannedAtDesc(Location location, Warehouse warehouse, Pageable pageable);
+
+   // последний скан для локации
+   Optional<InventoryHistory> findFirstByLocationAndWarehouseOrderByScannedAtDesc(Location location, Warehouse warehouse);
+
+   // кол-во сканов после указанного времени
+   long countByLocationAndWarehouseAndScannedAtAfter(Location location, Warehouse warehouse, LocalDateTime since);
 
 }

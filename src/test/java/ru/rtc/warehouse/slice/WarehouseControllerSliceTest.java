@@ -1,11 +1,7 @@
 package ru.rtc.warehouse.slice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.DisplayNameGeneration;
-import org.junit.jupiter.api.DisplayNameGenerator;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -15,7 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.user.model.User;
-import ru.rtc.warehouse.warehouse.controller.dto.WarehouseController;
+import ru.rtc.warehouse.warehouse.controller.WarehouseController;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
 import ru.rtc.warehouse.warehouse.service.WarehouseService;
 import ru.rtc.warehouse.warehouse.service.dto.WarehouseDTO;

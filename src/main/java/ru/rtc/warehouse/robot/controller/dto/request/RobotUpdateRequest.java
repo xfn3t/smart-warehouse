@@ -1,9 +1,13 @@
 package ru.rtc.warehouse.robot.controller.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.validation.constraints.*;
 
 @Getter
 @Setter
@@ -19,7 +23,7 @@ public class RobotUpdateRequest {
 	@Max(value = 100, message = "Battery level must be between 0 and 100")
 	private Integer batteryLevel;
 
-	@Size(max = 10, message = "Zone code must not exceed 10 characters")
+	@PositiveOrZero(message = "Zone must be non-negative")
 	private Integer currentZone;
 
 	@PositiveOrZero(message = "Row must be non-negative")

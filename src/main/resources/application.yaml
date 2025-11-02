@@ -29,7 +29,7 @@ spring:
         enabled: true
 
   liquibase:
-    change-log: classpath:db/changelog/master-changelog-v1.1.yaml
+    change-log: classpath:db/changelog/master-changelog-v1.2.5.yaml
     enabled: true
     clear-checksums: true
 server:
@@ -55,3 +55,20 @@ app:
     ttl:
       minute-series-seconds: 4000      # ~66 минут для поминутной серии
       checked-day-days: 3              # ежедневно – хранить 3 дня
+
+warehouse:
+  robot:
+    recent-scans-key-template: "robot:%s:recent_scans"
+    redis-channel: "ws:robot_updates"
+    ws-global-topic: "/topic/dashboard"
+    ws-robot-topic-prefix: "/topic/dashboard/robot"
+    ws-warehouse-topic-prefix: "/topic/dashboard/warehouse"
+    ws-global-locations-topic: "/topic/dashboard/locations"
+    ws-warehouse-locations-topic-prefix: "/topic/dashboard/warehouse"
+    recent-scans-limit: 5
+    heartbeat-millis: 5000
+    recent-scans-ttl-days: 7
+  location:
+    heartbeat-millis: 600000
+    recent-threshold-minutes: 15
+    medium-threshold-minutes: 120

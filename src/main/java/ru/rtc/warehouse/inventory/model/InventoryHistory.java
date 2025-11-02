@@ -1,11 +1,7 @@
 package ru.rtc.warehouse.inventory.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.robot.model.Robot;
@@ -13,6 +9,8 @@ import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+
 
 @Entity
 @Table(name = "inventory_history")

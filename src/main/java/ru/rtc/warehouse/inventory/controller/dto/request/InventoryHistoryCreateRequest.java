@@ -7,6 +7,7 @@ import lombok.Setter;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -38,4 +39,7 @@ public class InventoryHistoryCreateRequest {
 
 	@NotNull
 	private LocalDateTime scannedAt;
+
+	@NotNull
+	private UUID messageId;
 }

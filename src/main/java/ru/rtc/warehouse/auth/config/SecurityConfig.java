@@ -17,8 +17,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import ru.rtc.warehouse.auth.UserDetailsServiceImpl;
+import ru.rtc.warehouse.auth.repository.RobotTokenRepository;
 import ru.rtc.warehouse.auth.util.JwtAuthenticationFilter;
 import ru.rtc.warehouse.auth.util.JwtUtil;
+import ru.rtc.warehouse.auth.util.RobotTokenAuthenticationFilter;
 
 import java.util.List;
 
@@ -29,11 +31,16 @@ public class SecurityConfig {
 
 	private final JwtUtil jwtUtil;
 	private final UserDetailsServiceImpl customUserDetailsService;
+	private final RobotTokenRepository robotTokenRepository; // TODO: вынести в DetailsServiceImpl
 
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
 		return new JwtAuthenticationFilter(jwtUtil, customUserDetailsService);
 	}
+	@Bean
+    public RobotTokenAuthenticationFilter robotTokenAuthenticationFilter() {
+        return new RobotTokenAuthenticationFilter(jwtUtil, robotTokenRepository);
+    }
 
 	@Bean
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -74,6 +81,7 @@ public class SecurityConfig {
 				)
 				.userDetailsService(customUserDetailsService);
 
+		http.addFilterBefore(robotTokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 		http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
