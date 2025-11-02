@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ru.rtc.warehouse.config.RobotProperties;
 import ru.rtc.warehouse.exception.NotFoundException;
+import ru.rtc.warehouse.inventory.mapper.InventoryStatusReferenceMapper;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
@@ -57,6 +58,8 @@ public class RobotDataServiceImpl implements RobotDataService {
     private final LocationMetricsService locationMetricsService;
     private final LocationTelemetryPublisher locationTelemetryPublisher;
 
+    private final InventoryStatusReferenceMapper inventoryStatusReferenceMapper;
+
     @Override
     @Transactional
     public RobotDataResponse processRobotData(RobotDataRequest request) {
@@ -85,14 +88,17 @@ public class RobotDataServiceImpl implements RobotDataService {
         validateLocationBounds(locDto, robotWarehouse);
 
 
-        UUID messageId = UUID.randomUUID();
+        List<UUID> messageIds = new ArrayList<>(request.getScanResults().size());
+        
         List<Map<String, Object>> recentScansPayload = new ArrayList<>(request.getScanResults().size());
 
         for (ScanResultDTO sr : request.getScanResults()) {
+            UUID messageId = UUID.randomUUID();
+            messageIds.add(messageId);
             String productCode = sr.getProductCode();
             String productName = sr.getProductName();
             Integer quantity = sr.getQuantity();
-            InventoryHistoryStatus status = sr.getStatus();
+            InventoryHistoryStatus status = inventoryStatusReferenceMapper.mapStringToInventoryStatus(sr.getStatusCode());
 
 
             Optional<ru.rtc.warehouse.inventory.model.InventoryHistory> lastOpt =
@@ -185,7 +191,7 @@ public class RobotDataServiceImpl implements RobotDataService {
             }
         }
 
-        return new RobotDataResponse("received", messageId);
+        return new RobotDataResponse("received", messageIds);
     }
 
     private void validateLocationBounds(LocationDTO loc, Warehouse warehouse) {
