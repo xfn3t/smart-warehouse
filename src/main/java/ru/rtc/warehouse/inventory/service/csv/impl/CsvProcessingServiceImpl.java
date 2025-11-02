@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service.impl;
+package ru.rtc.warehouse.inventory.service.csv.impl;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryCsvDto;
-import ru.rtc.warehouse.inventory.service.CsvProcessingService;
+import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

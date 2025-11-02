@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service;
+package ru.rtc.warehouse.inventory.service.helper;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;

@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service.dto;
+package ru.rtc.warehouse.inventory.service.product.dto;
 
 import lombok.Getter;
 import lombok.Setter;

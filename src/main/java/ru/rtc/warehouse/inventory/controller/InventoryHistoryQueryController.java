@@ -12,10 +12,10 @@ import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchR
 import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySearchRequest;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryQueryService;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryService;
-import ru.rtc.warehouse.inventory.service.ProductLastInventoryService;
+import ru.rtc.warehouse.inventory.service.product.ProductLastInventoryService;
 import ru.rtc.warehouse.inventory.service.dto.HistoryPageDTO;
-import ru.rtc.warehouse.inventory.service.dto.LowStockProductDTO;
-import ru.rtc.warehouse.inventory.service.dto.ProductLastInventoryPageDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryPageDTO;
 
 import java.util.List;
 

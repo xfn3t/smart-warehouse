@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service;
+package ru.rtc.warehouse.inventory.service.csv;
 
 import org.springframework.web.multipart.MultipartFile;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryCsvDto;

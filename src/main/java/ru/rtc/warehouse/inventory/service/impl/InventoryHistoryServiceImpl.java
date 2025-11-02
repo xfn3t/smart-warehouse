@@ -14,9 +14,14 @@ import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus.InventoryHistoryStatusCode;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.inventory.service.*;
+import ru.rtc.warehouse.inventory.service.adapter.IHLocationEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.ProductEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.RobotEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryGroupedDTO;
-import ru.rtc.warehouse.inventory.service.dto.LowStockProductDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
@@ -128,7 +133,6 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 		return InventoryHistoryStatusCode.OK;
 	}
 
-	// Остальные методы остаются без изменений
 	public void save(InventoryHistoryCreateRequest request) {
 		InventoryHistory inventoryHistory = ihMapper.toEntity(request);
 		ihes.save(inventoryHistory);

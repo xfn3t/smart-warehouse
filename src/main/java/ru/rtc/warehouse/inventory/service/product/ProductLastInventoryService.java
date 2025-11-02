@@ -1,8 +1,8 @@
-package ru.rtc.warehouse.inventory.service;
+package ru.rtc.warehouse.inventory.service.product;
 
 import org.springframework.data.domain.Pageable;
 import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySearchRequest;
-import ru.rtc.warehouse.inventory.service.dto.ProductLastInventoryPageDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryPageDTO;
 
 public interface ProductLastInventoryService {
 	ProductLastInventoryPageDTO getLastInventoryByWarehouse(String warehouseCode,

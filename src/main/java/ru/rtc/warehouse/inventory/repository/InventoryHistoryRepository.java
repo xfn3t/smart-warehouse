@@ -12,8 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
-import ru.rtc.warehouse.inventory.service.dto.LowStockProductDTO;
-import ru.rtc.warehouse.inventory.service.dto.ProductWithLastInventoryProjection;
+import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductWithLastInventoryProjection;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 

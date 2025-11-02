@@ -9,9 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import ru.rtc.warehouse.inventory.service.CsvProcessingService;
+import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryService;
-import ru.rtc.warehouse.inventory.service.ProductLastInventoryService;
+import ru.rtc.warehouse.inventory.service.product.ProductLastInventoryService;
 
 @Slf4j
 @RestController

@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service;
+package ru.rtc.warehouse.inventory.service.adapter;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

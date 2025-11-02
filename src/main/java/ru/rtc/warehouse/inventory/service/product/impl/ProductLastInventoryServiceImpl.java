@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.inventory.service.impl;
+package ru.rtc.warehouse.inventory.service.product.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,10 +12,10 @@ import org.springframework.util.StringUtils;
 import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySearchRequest;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
-import ru.rtc.warehouse.inventory.service.ProductLastInventoryService;
-import ru.rtc.warehouse.inventory.service.dto.ProductLastInventoryDTO;
-import ru.rtc.warehouse.inventory.service.dto.ProductLastInventoryPageDTO;
-import ru.rtc.warehouse.inventory.service.dto.ProductWithLastInventoryProjection;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryPageDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.ProductWithLastInventoryProjection;
+import ru.rtc.warehouse.inventory.service.product.ProductLastInventoryService;
 
 import java.util.List;
 import java.util.stream.Collectors;

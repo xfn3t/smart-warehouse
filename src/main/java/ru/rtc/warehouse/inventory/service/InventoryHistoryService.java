@@ -6,7 +6,7 @@ import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateR
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryGroupedDTO;
-import ru.rtc.warehouse.inventory.service.dto.LowStockProductDTO;
+import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
