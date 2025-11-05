@@ -55,7 +55,9 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 
 	@Override
 	public void delete(Long id) {
-		warehouseRepository.deleteById(id);
+		Warehouse warehouse = findById(id);
+		warehouse.setDeleted(true);
+		save(warehouse);
 	}
 
 	@Override
@@ -66,6 +68,13 @@ public class WarehouseEntityServiceImpl implements WarehouseEntityService {
 						HttpStatus.NOT_FOUND,
 						"Склад не найден: " + warehouseCode
 				));
+	}
+
+	@Override
+	public void delete(String warehouseCode) {
+		Warehouse warehouse = findByCode(warehouseCode);
+		warehouse.setDeleted(true);
+		save(warehouse);
 	}
 
 

@@ -46,6 +46,16 @@ public class WarehouseServiceImpl implements WarehouseService {
 	@Override
 	public void update(WarehouseUpdateRequest updateRequest, Long id) {
 		Warehouse warehouse = warehouseEntityService.findById(id);
+		update(updateRequest, warehouse);
+	}
+
+	@Override
+	public void update(WarehouseUpdateRequest updateRequest, String warehouseCode) {
+		Warehouse warehouse = warehouseEntityService.findByCode(warehouseCode);
+		update(updateRequest, warehouse);
+	}
+
+	public void update(WarehouseUpdateRequest updateRequest, Warehouse warehouse) {
 
 		boolean dimensionsChanged = false;
 
@@ -79,6 +89,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
 		warehouseEntityService.update(warehouse);
 	}
+
 	@Override
 	public List<WarehouseDTO> findAll() {
 		return warehouseMapper.toDtoList(warehouseEntityService.findAll());
@@ -97,6 +108,11 @@ public class WarehouseServiceImpl implements WarehouseService {
 	@Override
 	public void delete(Long id) {
 		warehouseEntityService.delete(id);
+	}
+
+	@Override
+	public void delete(String warehouseCode) {
+		warehouseEntityService.delete(warehouseCode);
 	}
 
 	@Override

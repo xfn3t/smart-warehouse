@@ -29,9 +29,9 @@ public class RobotController {
         return ResponseEntity.ok(robotService.findById(id));
     }
 
-    @GetMapping("/code/{code}")
-    public ResponseEntity<RobotDTO> getRobotByCode(@PathVariable String code) {
-        return ResponseEntity.ok(robotService.findByCode(code));
+    @GetMapping("/code/{robotCode}")
+    public ResponseEntity<RobotDTO> getRobotByCode(@PathVariable String robotCode) {
+        return ResponseEntity.ok(robotService.findByCode(robotCode));
     }
 
     @GetMapping("/warehouse/{warehouseCode}")

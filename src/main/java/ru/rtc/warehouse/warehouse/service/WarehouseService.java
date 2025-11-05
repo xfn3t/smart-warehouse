@@ -9,10 +9,12 @@ import java.util.List;
 public interface WarehouseService {
 	void save(WarehouseCreateRequest createRequest, Long userId);
 	void update(WarehouseUpdateRequest request, Long id);
+	void update(WarehouseUpdateRequest updateRequest, String warehouseCode);
 	List<WarehouseDTO> findAll();
 	WarehouseDTO findById(Long id);
 	WarehouseDTO findByCode(String code);
 	void delete(Long id);
+	void delete(String warehouseCode);
 
 	List<WarehouseDTO> findByUserId(Long userId);
 }

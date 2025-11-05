@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
+import ru.rtc.warehouse.common.aspect.RequiresWarehouseAccess;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseUpdateRequest;
 import ru.rtc.warehouse.warehouse.service.WarehouseService;
@@ -30,13 +31,19 @@ public class WarehouseController {
 		warehouseService.save(warehouseCreateRequest, getUserId(authentication));
 	}
 
-	@PutMapping("/{warehouseId}")
+	@PutMapping("/{warehouseCode}")
 	@ResponseStatus(HttpStatus.OK)
 	public void updateWarehouse(
 			@RequestBody WarehouseUpdateRequest warehouseUpdateRequest,
-			@PathVariable Long warehouseId
+			@PathVariable String warehouseCode
 	) {
-		warehouseService.update(warehouseUpdateRequest, warehouseId);
+		warehouseService.update(warehouseUpdateRequest, warehouseCode);
+	}
+
+	@DeleteMapping("/{warehouseCode}")
+	@ResponseStatus(HttpStatus.OK)
+	public void deleteWarehouse(@PathVariable String warehouseCode) {
+		warehouseService.delete(warehouseCode);
 	}
 
 	private Long getUserId(Authentication authentication) {
