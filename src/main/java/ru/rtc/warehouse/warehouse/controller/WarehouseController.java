@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
-import ru.rtc.warehouse.common.aspect.RequiresWarehouseAccess;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseUpdateRequest;
 import ru.rtc.warehouse.warehouse.service.WarehouseService;
@@ -16,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/warehouse")
 @RequiredArgsConstructor
+@RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
 public class WarehouseController {
 
 	private final WarehouseService warehouseService;

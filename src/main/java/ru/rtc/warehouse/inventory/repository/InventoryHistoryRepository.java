@@ -289,9 +289,16 @@ public interface InventoryHistoryRepository extends
    // кол-во сканов после указанного времени
    long countByLocationAndWarehouseAndScannedAtAfter(Location location, Warehouse warehouse, LocalDateTime since);
 
-	long countByWarehouseAndScannedAtBetween(Warehouse warehouse, LocalDateTime todayStart, LocalDateTime todayEnd);
+   long countByWarehouseAndScannedAtBetween(Warehouse warehouse, LocalDateTime todayStart, LocalDateTime todayEnd);
 
-	long countByWarehouseAndStatusAndScannedAtAfter(Warehouse warehouse, InventoryHistoryStatus.InventoryHistoryStatusCode inventoryHistoryStatusCode, LocalDateTime last24Hours);
+	@Query("""
+        select count(ih)
+        from InventoryHistory ih
+        where ih.warehouse = :warehouse
+          and ih.status.code = :status
+          and ih.scannedAt > :scannedAt
+    """)
+	long countByWarehouseAndStatusAndScannedAtAfter(Warehouse warehouse, InventoryHistoryStatus.InventoryHistoryStatusCode status, LocalDateTime scannedAt);
 
 	boolean existsByLocationAndScannedAtAfter(Location location, LocalDateTime since);
 }

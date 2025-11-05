@@ -8,7 +8,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
 import ru.rtc.warehouse.inventory.service.InventoryHistorySummaryService;
 import ru.rtc.warehouse.inventory.service.dto.HistorySummaryDTO;
@@ -16,6 +20,7 @@ import ru.rtc.warehouse.inventory.service.dto.HistorySummaryDTO;
 @RestController
 @RequestMapping("/api/{warehouseCode}/inventory/history")
 @RequiredArgsConstructor
+@RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
 public class InventoryHistorySummaryController {
 
     private final InventoryHistorySummaryService summaryService;
