@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.common.aspect;
 
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -17,18 +18,13 @@ import java.util.List;
 @Aspect
 @Component
 @Order(1)
+@RequiredArgsConstructor
 public class OwnershipAspect {
 
 	private final OwnershipGuard ownershipGuard;
 
-	public OwnershipAspect(OwnershipGuard ownershipGuard) {
-		this.ownershipGuard = ownershipGuard;
-		System.out.println(">>> OwnershipAspect bean initialized!");
-	}
-
 	@Before("@within(requiresOwnership) || @annotation(requiresOwnership)")
 	public void checkAccess(JoinPoint jp, RequiresOwnership requiresOwnership) {
-		System.out.println(">>> OwnershipAspect triggered for: " + jp.getSignature());
 
 		// Собираем все аннотации RequiresOwnership (включая повторяющиеся)
 		List<AccessCheck> checks = collectAccessChecks(jp, requiresOwnership);
@@ -36,12 +32,10 @@ public class OwnershipAspect {
 		for (AccessCheck check : checks) {
 			String entityCode = extractEntityCode(jp, check.paramName);
 			if (entityCode == null) {
-				System.out.println(">>> OwnershipAspect: param '" + check.paramName + "' not found, skipping");
 				continue;
 			}
 
 			Long userId = getCurrentUserId();
-			System.out.println(">>> Checking access for user " + userId + " to " + check.entityType + " with code: " + entityCode);
 
 			ownershipGuard.assertOwnership(check.entityType, entityCode, userId);
 		}
@@ -115,7 +109,6 @@ public class OwnershipAspect {
 		// Если не нашли по точному имени, ищем по частичному совпадению
 		for (int i = 0; i < paramNames.length; i++) {
 			if (args[i] instanceof String code && paramNames[i].toLowerCase().contains(paramName.toLowerCase())) {
-				System.out.println(">>> Using parameter '" + paramNames[i] + "' for '" + paramName + "' with value: " + code);
 				return code;
 			}
 		}
