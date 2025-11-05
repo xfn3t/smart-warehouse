@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.rtc.warehouse.dashboard.service.RealtimeStatsService;
-import ru.rtc.warehouse.dashboard.service.WarehouseEntServiceAdapter;
+import ru.rtc.warehouse.dashboard.service.adapter.WarehouseEntServiceAdapter;
 
 @Component
 @EnableScheduling

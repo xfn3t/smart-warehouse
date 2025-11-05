@@ -7,10 +7,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.dashboard.redis.RealtimeMetricsWriter;
-import ru.rtc.warehouse.dashboard.service.DashboardInventoryHistoryEntServiceAdapter;
-import ru.rtc.warehouse.dashboard.service.DashboardRobotEntServiceAdapter;
+import ru.rtc.warehouse.dashboard.service.adapter.DashboardInventoryHistoryEntServiceAdapter;
+import ru.rtc.warehouse.dashboard.service.adapter.DashboardRobotEntServiceAdapter;
 import ru.rtc.warehouse.dashboard.service.RealtimeStatsService;
-import ru.rtc.warehouse.dashboard.service.WarehouseEntServiceAdapter;
+import ru.rtc.warehouse.dashboard.service.adapter.WarehouseEntServiceAdapter;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 @Component

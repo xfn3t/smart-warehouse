@@ -5,14 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.exception.NotFoundException;
-import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.robot.repository.RobotRepository;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -20,7 +17,6 @@ import java.util.stream.Collectors;
 public class RobotEntityServiceImpl implements RobotEntityService {
 
 	private final RobotRepository robotRepository;
-	private final InventoryHistoryRepository inventoryHistoryRepository;
 
 
 	@Override
@@ -34,17 +30,20 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Robot> findAll() {
 		return robotRepository.findAll();
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Robot findById(Long id) {
 		return robotRepository.findById(id)
 				.orElseThrow(() -> new NotFoundException("Robot not found"));
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Robot findByCode(String code) {
 		return robotRepository.findByCode(code)
 				.orElseThrow(() -> new NotFoundException("Robot not found"));
@@ -66,8 +65,15 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Robot> findAllByWarehouseCode(String warehouseCode) {
 		return robotRepository.findAllByWarehouseCode(warehouseCode);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Robot> findAllWithWarehouseAndLocation() {
+		return robotRepository.findAllWithWarehouseAndLocation();
 	}
 
 	@Transactional(readOnly = true)

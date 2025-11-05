@@ -13,4 +13,6 @@ public interface RobotEntityService extends CrudEntityService<Robot, Long> {
 	Integer getTotalRobotsCount(Long id);
 
 	List<Robot> findAllByWarehouseCode(String warehouseCode);
+
+	List<Robot> findAllWithWarehouseAndLocation();
 }

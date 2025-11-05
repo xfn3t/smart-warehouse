@@ -31,7 +31,7 @@ public class SecurityConfig {
 
 	private final JwtUtil jwtUtil;
 	private final UserDetailsServiceImpl customUserDetailsService;
-	private final RobotTokenRepository robotTokenRepository; // TODO: вынести в DetailsServiceImpl
+	private final RobotTokenRepository robotTokenRepository;
 
 	@Bean
 	public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -77,6 +77,7 @@ public class SecurityConfig {
 						.requestMatchers("/swagger-ui/**").permitAll()
 						.requestMatchers("/v3/swagger-ui/**").permitAll()
 						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/ws", "/ws/**", "/api/ws/dashboard", "/api/ws/dashboard/**", "/ws/info/**").permitAll()
 						.anyRequest().authenticated()
 				)
 				.userDetailsService(customUserDetailsService);

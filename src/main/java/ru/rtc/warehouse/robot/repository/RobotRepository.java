@@ -28,4 +28,7 @@ public interface RobotRepository extends JpaRepository<Robot, Long> {
 
 	@Query("SELECT r FROM Robot r WHERE r.warehouse.code = :warehouseCode AND r.isDeleted = false")
 	List<Robot> findAllByWarehouseCode(String warehouseCode);
+
+	@Query("SELECT r FROM Robot r JOIN FETCH r.warehouse JOIN FETCH r.location WHERE r.isDeleted = false")
+	List<Robot> findAllWithWarehouseAndLocation();
 }

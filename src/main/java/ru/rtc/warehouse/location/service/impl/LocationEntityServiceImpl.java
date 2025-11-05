@@ -12,7 +12,8 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class LocationEntityServiceImpl implements LocationEntityService {
+public class
+LocationEntityServiceImpl implements LocationEntityService {
 
 	private final LocationRepository repository;
 

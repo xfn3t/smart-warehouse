@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
 	@EntityGraph(attributePaths = {
-			"products",
 			"locations"
 	})
 	Optional<Warehouse> findByCode(String code);

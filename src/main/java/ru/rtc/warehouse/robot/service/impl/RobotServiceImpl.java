@@ -3,7 +3,6 @@ package ru.rtc.warehouse.robot.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.location.repository.LocationRepository;
@@ -20,7 +19,6 @@ import ru.rtc.warehouse.robot.service.adapter.RobotAuthAdapter;
 import ru.rtc.warehouse.robot.service.adapter.WarehouseAdapter;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
-import ru.rtc.warehouse.warehouse.service.LocationServiceAdapter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -131,6 +129,7 @@ public class RobotServiceImpl implements RobotService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<RobotDTO> findAllByWarehouseCode(String warehouseCode) {
 		return robotMapper.toDtoList(robotEntityService.findAllByWarehouseCode(warehouseCode));
 	}

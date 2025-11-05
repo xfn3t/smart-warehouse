@@ -30,7 +30,7 @@ public class DashboardPublisher {
     @Transactional(readOnly = true)
     public void publishHeartbeat() {
         try {
-            List<Robot> robots = robotService.findAll();
+            List<Robot> robots = robotService.findAllWithWarehouseAndLocation();
             for (Robot robot : robots) {
                 try {
                     if (robot.isDeleted()) continue;

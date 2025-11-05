@@ -69,6 +69,17 @@ public class RealtimeStatsServiceRedisImpl implements RealtimeStatsService {
     }
 
 
-    private long size(String key) { Long s = rt.opsForSet().size(key); return s == null ? 0L : s; }
-    private long parseLong(String s) { if (s == null || s.isBlank()) return 0L; try { return Long.parseLong(s); } catch (Exception e) { return 0L; } }
+    private long size(String key) {
+        Long s = rt.opsForSet().size(key);
+        return s == null ? 0L : s;
+    }
+
+    private long parseLong(String s) {
+        if (s == null || s.isBlank()) return 0L;
+        try {
+            return Long.parseLong(s);
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
 }

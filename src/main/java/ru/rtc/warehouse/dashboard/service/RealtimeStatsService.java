@@ -1,4 +1,3 @@
-// src/main/java/ru/rtc/warehouse/dashboard/RealtimeStatsService.java
 package ru.rtc.warehouse.dashboard.service;
 
 import ru.rtc.warehouse.dashboard.dto.RealtimeStatsDTO;

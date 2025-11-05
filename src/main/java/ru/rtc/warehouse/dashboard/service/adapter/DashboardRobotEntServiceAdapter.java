@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.dashboard.service;
+package ru.rtc.warehouse.dashboard.service.adapter;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

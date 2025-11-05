@@ -52,6 +52,7 @@ logging:
 
 app:
   dashboard:
+    push-interval-ms: 30000
     ttl:
       minute-series-seconds: 4000      # ~66 минут для поминутной серии
       checked-day-days: 3              # ежедневно – хранить 3 дня
