@@ -9,12 +9,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.inventory.service.csv.InventoryImportService;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/{warehouseCode}/inventory")
 @RequiredArgsConstructor
+@RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
 public class InventoryImportController {
 
 	private final InventoryImportService inventoryImportService;

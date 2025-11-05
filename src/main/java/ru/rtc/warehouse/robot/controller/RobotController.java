@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.controller.dto.response.RobotTokenResponse;
@@ -30,11 +31,13 @@ public class RobotController {
     }
 
     @GetMapping("/code/{robotCode}")
+    @RequiresOwnership(codeParam = "robotCode", entityType = RequiresOwnership.EntityType.ROBOT)
     public ResponseEntity<RobotDTO> getRobotByCode(@PathVariable String robotCode) {
         return ResponseEntity.ok(robotService.findByCode(robotCode));
     }
 
     @GetMapping("/warehouse/{warehouseCode}")
+    @RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
     public ResponseEntity<List<RobotDTO>> getRobotsByWarehouse(@PathVariable String warehouseCode) {
         return ResponseEntity.ok(robotService.findAllByWarehouseCode(warehouseCode));
     }
@@ -46,11 +49,13 @@ public class RobotController {
     }
 
     @PutMapping("/{robotCode}")
+    @RequiresOwnership(codeParam = "robotCode", entityType = RequiresOwnership.EntityType.ROBOT)
     public ResponseEntity<RobotDTO> updateRobot(@PathVariable String robotCode, @Valid @RequestBody RobotUpdateRequest req) {
         return ResponseEntity.ok(robotService.update(req, robotCode));
     }
 
     @DeleteMapping("/{robotCode}")
+    @RequiresOwnership(codeParam = "robotCode", entityType = RequiresOwnership.EntityType.ROBOT)
     public ResponseEntity<Void> deleteRobot(@PathVariable String robotCode) {
         robotService.delete(robotCode);
         return ResponseEntity.noContent().build();

@@ -3,6 +3,7 @@ package ru.rtc.warehouse.location.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.location.service.LocationMetricsService;
 import ru.rtc.warehouse.location.service.publisher.LocationTelemetryPublisher;
 import ru.rtc.warehouse.location.dto.LocationMetricsDTO;
@@ -24,10 +25,11 @@ public class LocationController {
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    @GetMapping("/{code}/locations")
-    public ResponseEntity<List<LocationMetricsDTO>> list(@PathVariable String code) {
+    @GetMapping("/{warehouseCode}/locations")
+    @RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
+    public ResponseEntity<List<LocationMetricsDTO>> list(@PathVariable String warehouseCode) {
 
-        String snapshotKey = LocationTelemetryPublisher.snapshotKey(code);
+        String snapshotKey = LocationTelemetryPublisher.snapshotKey(warehouseCode);
         try {
             String cached = redisTemplate.opsForValue().get(snapshotKey);
             if (cached != null) {
@@ -39,7 +41,7 @@ public class LocationController {
         }
 
 
-        var wh = warehouseService.findByCode(code);
+        var wh = warehouseService.findByCode(warehouseCode);
         List<Location> locs = locationRepository.findByWarehouse(wh);
         List<LocationMetricsDTO> dtos = locs.stream()
                 .map(metricsService::computeFor)

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryPageRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySearchRequest;
@@ -23,6 +24,7 @@ import java.util.List;
 @RequestMapping("/api/{warehouseCode}/inventory/history")
 @Tag(name = "Inventory History")
 @RequiredArgsConstructor
+@RequiresOwnership(codeParam = "warehouseCode", entityType = RequiresOwnership.EntityType.WAREHOUSE)
 public class InventoryHistoryQueryController {
 
     private final InventoryHistoryQueryService queryService;
