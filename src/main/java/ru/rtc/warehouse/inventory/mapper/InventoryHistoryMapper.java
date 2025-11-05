@@ -7,8 +7,8 @@ import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateR
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryStatusRepository;
-import ru.rtc.warehouse.inventory.service.adapter.ProductEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.adapter.RobotEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.IHProductEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.IHRobotEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.robot.model.Robot;
@@ -27,9 +27,9 @@ import java.util.List;
 public abstract class InventoryHistoryMapper {
 
 	@Autowired
-	protected RobotEntServiceAdapter robotService;
+	protected IHRobotEntServiceAdapter robotService;
 	@Autowired
-	protected ProductEntServiceAdapter productService;
+	protected IHProductEntServiceAdapter productService;
 	@Autowired
 	private InventoryHistoryStatusRepository statusRepo;
 

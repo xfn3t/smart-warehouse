@@ -7,7 +7,7 @@ import ru.rtc.warehouse.product.service.ProductEntityService;
 
 @Service
 @RequiredArgsConstructor
-public class ProductEntServiceAdapter {
+public class IHProductEntServiceAdapter {
 
 	private final ProductEntityService productEntityService;
 

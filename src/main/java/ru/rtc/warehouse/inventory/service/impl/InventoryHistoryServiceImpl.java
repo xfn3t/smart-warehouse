@@ -4,34 +4,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-import ru.rtc.warehouse.inventory.controller.dto.request.InventoryCsvDto;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryCreateRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateRequest;
 import ru.rtc.warehouse.inventory.mapper.InventoryHistoryMapper;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
-import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus.InventoryHistoryStatusCode;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
-import ru.rtc.warehouse.inventory.service.*;
-import ru.rtc.warehouse.inventory.service.adapter.IHLocationEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.adapter.ProductEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.adapter.RobotEntServiceAdapter;
-import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
+import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
+import ru.rtc.warehouse.inventory.service.InventoryHistoryService;
+import ru.rtc.warehouse.inventory.service.InventoryHistoryStatusService;
+import ru.rtc.warehouse.inventory.service.adapter.IHProductEntServiceAdapter;
+import ru.rtc.warehouse.inventory.service.adapter.IHRobotEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryGroupedDTO;
 import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
-import ru.rtc.warehouse.location.model.Location;
-import ru.rtc.warehouse.product.model.Product;
-import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,96 +32,9 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 	private final InventoryHistoryEntityService ihes;
 	private final InventoryHistoryStatusService ihss;
 	private final InventoryHistoryMapper ihMapper;
-	private final CsvProcessingService csvService;
-	private final IHWarehouseEntServiceAdapter warehouseService;
-	private final IHLocationEntServiceAdapter locationService;
-	private final RobotEntServiceAdapter robotAdapter;
-	private final ProductEntServiceAdapter productAdapter;
+	private final IHRobotEntServiceAdapter robotAdapter;
+	private final IHProductEntServiceAdapter productAdapter;
 	private final InventoryHistoryRepository inventoryHistoryRepository;
-
-	@Override
-	@Transactional
-	public void saveCsv(MultipartFile multipartFile, String warehouseCode) {
-		List<InventoryCsvDto> inventoryCsvDtos = csvService.parseCsvFile(multipartFile);
-		Warehouse warehouse = warehouseService.findByCode(warehouseCode);
-
-		// Мапа для подсчета товаров в каждой ячейке
-		Map<String, AtomicInteger> locationCounter = new HashMap<>();
-
-		for (InventoryCsvDto dto : inventoryCsvDtos) {
-			// Находим или создаем локацию
-			Location location = locationService.findByCoordinate(
-					dto.getZone(),
-					dto.getRow(),
-					dto.getShelf(),
-					warehouse.getId()
-			);
-
-			// Генерируем ключ для локации
-			String locationKey = String.format("%d-%d-%d-%d",
-					dto.getZone(), dto.getRow(), dto.getShelf(), warehouse.getId());
-
-			// Получаем или создаем счетчик для этой локации
-			AtomicInteger counter = locationCounter.computeIfAbsent(locationKey, k -> {
-				// Ищем существующие товары в этой локации для определения стартового номера
-				int existingCount = countProductsInLocation(location, warehouse);
-				return new AtomicInteger(existingCount);
-			});
-
-			// Генерируем SKU код
-			String skuCode = generateSkuCode(dto.getZone(), dto.getRow(), dto.getShelf(),
-					warehouse.getCode(), counter.incrementAndGet());
-
-			// Создаем продукт
-			Product product = Product.builder()
-					.name(dto.getName())
-					.category(dto.getCategory())
-					.minStock(dto.getMinStock())
-					.optimalStock(dto.getOptimalStock())
-					.code(skuCode) // Используем сгенерированный SKU
-					.build();
-			product = productAdapter.save(product);
-
-			// Определяем статус инвентаризации
-			InventoryHistoryStatus inventoryHistoryStatus = ihss.findByCode(getInventoryHistoryStatusCode(dto));
-
-			// Создаем запись в истории инвентаризации
-			InventoryHistory inventoryHistory = InventoryHistory.builder()
-					.status(inventoryHistoryStatus)
-					.scannedAt(LocalDateTime.now())
-					.createdAt(LocalDateTime.now())
-					.warehouse(warehouse)
-					.product(product)
-					.quantity(dto.getQuantity())
-					.expectedQuantity(dto.getQuantity())
-					.difference(0)
-					.location(location)
-					.robot(null)
-					.build();
-
-			ihes.save(inventoryHistory);
-		}
-	}
-
-	private String generateSkuCode(Integer zone, Integer row, Integer shelf, String warehouseCode, int itemNumber) {
-		// Формат: SKU111-WH002-02
-		// Где: SKU - префикс, 111 - zone+row+shelf, WH002 - код склада, 02 - номер в ячейке
-		String locationPart = String.format("%d%d%d", zone, row, shelf);
-		String warehousePart = warehouseCode.startsWith("WH") ? warehouseCode : "WH" + warehouseCode;
-		String itemPart = String.format("%02d", itemNumber);
-
-		return String.format("SKU%s-%s-%s", locationPart, warehousePart, itemPart);
-	}
-
-	private InventoryHistoryStatusCode getInventoryHistoryStatusCode(InventoryCsvDto dto) {
-		if (dto.getQuantity() <= dto.getMinStock()) {
-			return InventoryHistoryStatusCode.CRITICAL;
-		}
-		if (dto.getQuantity() < dto.getOptimalStock()) {
-			return InventoryHistoryStatusCode.LOW_STOCK;
-		}
-		return InventoryHistoryStatusCode.OK;
-	}
 
 	public void save(InventoryHistoryCreateRequest request) {
 		InventoryHistory inventoryHistory = ihMapper.toEntity(request);
@@ -204,11 +107,6 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 			log.error("Error finding aggregated daily inventory for warehouse: {}", warehouseId, e);
 			throw new RuntimeException("Failed to retrieve aggregated inventory data", e);
 		}
-	}
-
-	@Override
-	public int countProductsInLocation(Location location, Warehouse warehouse) {
-		return inventoryHistoryRepository.countByLocationAndWarehouse(location, warehouse);
 	}
 
 	@Override

@@ -7,7 +7,7 @@ import ru.rtc.warehouse.robot.service.RobotEntityService;
 
 @Service
 @RequiredArgsConstructor
-public class RobotEntServiceAdapter {
+public class IHRobotEntServiceAdapter {
 
 	private final RobotEntityService robotEntityService;
 

@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
+import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
+import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,6 +58,21 @@ public class InventoryHistoryEntityServiceImpl implements InventoryHistoryEntity
 	@Override
 	public List<InventoryHistory> findAllByWarehouseCodeAndProductCode(String warehouseCode, String productCode) {
 		return inventoryHistoryRepository.findAllByWarehouseCodeAndProductCode(warehouseCode, productCode);
+	}
+
+	@Override
+	public long countByWarehouseAndScannedAtBetween(Warehouse warehouse, LocalDateTime todayStart, LocalDateTime todayEnd) {
+		return inventoryHistoryRepository.countByWarehouseAndScannedAtBetween(warehouse, todayStart, todayEnd);
+	}
+
+	@Override
+	public long countByWarehouseAndStatusAndScannedAtAfter(Warehouse warehouse, InventoryHistoryStatus.InventoryHistoryStatusCode inventoryHistoryStatusCode, LocalDateTime last24Hours) {
+		return inventoryHistoryRepository.countByWarehouseAndStatusAndScannedAtAfter(warehouse, inventoryHistoryStatusCode, last24Hours);
+	}
+
+	@Override
+	public boolean existsByLocationAndScannedAtAfter(Location location, LocalDateTime since) {
+		return inventoryHistoryRepository.existsByLocationAndScannedAtAfter(location, since);
 	}
 
 	@Transactional(readOnly = true)

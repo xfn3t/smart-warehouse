@@ -2,7 +2,6 @@ package ru.rtc.warehouse.inventory.service.csv.impl;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.bean.HeaderColumnNameTranslateMappingStrategy;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,28 +16,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
 @Slf4j
-@RequiredArgsConstructor
+@Service
 public class CsvProcessingServiceImpl implements CsvProcessingService {
 
 	@Override
 	public List<InventoryCsvDto> parseCsvFile(MultipartFile file) {
 		try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
 
-			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
-					new HeaderColumnNameTranslateMappingStrategy<>();
-			strategy.setType(InventoryCsvDto.class);
-
-			// Обновленный маппинг - убрали sku_code
-			Map<String, String> columnMapping = new HashMap<>();
-			columnMapping.put("name", "name");
-			columnMapping.put("category", "category");
-			columnMapping.put("location", "location");
-			columnMapping.put("quantity", "quantity");
-			columnMapping.put("minStock", "minStock");
-			columnMapping.put("optimalStock", "optimalStock");
-			strategy.setColumnMapping(columnMapping);
+			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy = getInventoryCsvDtoHeaderColumnNameTranslateMappingStrategy();
 
 			List<InventoryCsvDto> result = new CsvToBeanBuilder<InventoryCsvDto>(reader)
 					.withMappingStrategy(strategy)
@@ -48,19 +34,33 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 					.build()
 					.parse();
 
-			// Обрабатываем location для каждого DTO
 			return result.stream()
-					.map(this::processLocation)
+					.map(this::parseLocationFromCsv)
 					.collect(Collectors.toList());
 
 		} catch (Exception e) {
-			log.error("Error processing CSV file", e);
+			log.error("Ошибка обработки CSV файла", e);
 			throw new RuntimeException("Failed to process CSV file: " + e.getMessage(), e);
 		}
 	}
 
-	private InventoryCsvDto processLocation(InventoryCsvDto dto) {
-		// Парсим location в формат "1-1-1" на zone, row, shelf
+	private HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> getInventoryCsvDtoHeaderColumnNameTranslateMappingStrategy() {
+		HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
+				new HeaderColumnNameTranslateMappingStrategy<>();
+		strategy.setType(InventoryCsvDto.class);
+
+		Map<String, String> columnMapping = new HashMap<>();
+		columnMapping.put("name", "name");
+		columnMapping.put("category", "category");
+		columnMapping.put("location", "location");
+		columnMapping.put("quantity", "quantity");
+		columnMapping.put("minStock", "minStock");
+		columnMapping.put("optimalStock", "optimalStock");
+		strategy.setColumnMapping(columnMapping);
+		return strategy;
+	}
+
+	private InventoryCsvDto parseLocationFromCsv(InventoryCsvDto dto) {
 		String location = dto.getLocation();
 		if (location != null && !location.isEmpty()) {
 			try {
@@ -70,10 +70,12 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 					dto.setRow(Integer.parseInt(parts[1].trim()));
 					dto.setShelf(Integer.parseInt(parts[2].trim()));
 				} else {
-					log.warn("Invalid location format: {}, expected format: zone-row-shelf", location);
+					log.warn("Неверный формат локации: {}, ожидается: зона-ряд-полка", location);
+					throw new IllegalArgumentException("Invalid location format: " + location);
 				}
 			} catch (NumberFormatException e) {
-				log.warn("Failed to parse location: {}", location, e);
+				log.warn("Ошибка парсинга локации: {}", location, e);
+				throw new IllegalArgumentException("Failed to parse location: " + location);
 			}
 		}
 		return dto;
