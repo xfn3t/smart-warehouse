@@ -4,13 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.rtc.warehouse.auth.model.RobotToken;
-import ru.rtc.warehouse.auth.service.RobotAuthService;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotCreateRequest;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotUpdateRequest;
 import ru.rtc.warehouse.robot.controller.dto.response.RobotTokenResponse;
-import ru.rtc.warehouse.robot.mapper.RobotMapper;
-import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.robot.service.RobotService;
 import ru.rtc.warehouse.robot.service.dto.RobotDTO;
 
@@ -22,8 +18,6 @@ import java.util.List;
 public class RobotController {
 
     private final RobotService robotService;
-    private final RobotAuthService robotAuthService;
-    private final RobotMapper robotMapper;
 
     @GetMapping
     public ResponseEntity<List<RobotDTO>> getAllRobots() {
@@ -47,24 +41,18 @@ public class RobotController {
 
     @PostMapping("/register")
     public ResponseEntity<RobotTokenResponse> registerRobot(@Valid @RequestBody RobotCreateRequest request) {
-        robotService.save(request);
-        String code = request.getCode();
-        RobotDTO saved = robotService.findByCode(code);
-        Robot robot = robotMapper.toEntity(saved);
-        RobotToken tokenEntity = robotAuthService.createRobotToken(robot);
-        return ResponseEntity.ok(new RobotTokenResponse(tokenEntity.getToken()));
+        RobotTokenResponse response = robotService.save(request);
+        return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<RobotDTO> updateRobot(@PathVariable Long id, @Valid @RequestBody RobotUpdateRequest req) {
-        robotService.update(req, id);
-        RobotDTO dto = robotService.findById(id);
-        return ResponseEntity.ok(dto);
+    @PutMapping("/{robotCode}")
+    public ResponseEntity<RobotDTO> updateRobot(@PathVariable String robotCode, @Valid @RequestBody RobotUpdateRequest req) {
+        return ResponseEntity.ok(robotService.update(req, robotCode));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRobot(@PathVariable Long id) {
-        robotService.delete(id);
+    @DeleteMapping("/{robotCode}")
+    public ResponseEntity<Void> deleteRobot(@PathVariable String robotCode) {
+        robotService.delete(robotCode);
         return ResponseEntity.noContent().build();
     }
 }

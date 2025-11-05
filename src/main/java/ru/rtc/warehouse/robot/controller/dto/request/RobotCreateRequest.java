@@ -41,5 +41,5 @@ public class RobotCreateRequest {
 	private Integer currentShelf;
 
 	@NotNull(message = "Warehouse ID is required")
-	private Long warehouseId;
+	private String warehouseCode;
 }

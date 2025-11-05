@@ -18,7 +18,6 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 
 	private final RobotRepository robotRepository;
 
-
 	@Override
 	public Robot save(Robot robot) {
 		return robotRepository.save(robot);
@@ -60,8 +59,11 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 	}
 
 	@Override
+	@Transactional
 	public void delete(Long id) {
-		robotRepository.deleteById(id);
+		Robot robot = findById(id);
+		robot.setDeleted(true);
+		save(robot);
 	}
 
 	@Override
@@ -74,6 +76,13 @@ public class RobotEntityServiceImpl implements RobotEntityService {
 	@Transactional(readOnly = true)
 	public List<Robot> findAllWithWarehouseAndLocation() {
 		return robotRepository.findAllWithWarehouseAndLocation();
+	}
+
+	@Override
+	public void delete(String robotCode) {
+		Robot robot = findByCode(robotCode);
+		robot.setDeleted(true);
+		save(robot);
 	}
 
 	@Transactional(readOnly = true)

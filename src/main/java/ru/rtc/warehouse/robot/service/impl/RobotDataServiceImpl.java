@@ -74,8 +74,7 @@ public class RobotDataServiceImpl implements RobotDataService {
 
         LocationDTO locDto = request.getLocation();
         Location location = locationAdapter
-                .findByWarehouseAndZoneAndRowAndShelf(robot.getWarehouse(), locDto.getZone(), locDto.getRow(), locDto.getShelf())
-                .orElseThrow(() -> new NotFoundException("Location not found: " + locDto));
+                .findByWarehouseAndZoneAndRowAndShelf(robot.getWarehouse(), locDto.getZone(), locDto.getRow(), locDto.getShelf());
         robot.setLocation(location);
 
         robotEntityService.saveAndFlush(robot);

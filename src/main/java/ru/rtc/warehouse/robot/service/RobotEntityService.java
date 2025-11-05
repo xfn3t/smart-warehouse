@@ -15,4 +15,6 @@ public interface RobotEntityService extends CrudEntityService<Robot, Long> {
 	List<Robot> findAllByWarehouseCode(String warehouseCode);
 
 	List<Robot> findAllWithWarehouseAndLocation();
+
+	void delete(String robotCode);
 }
