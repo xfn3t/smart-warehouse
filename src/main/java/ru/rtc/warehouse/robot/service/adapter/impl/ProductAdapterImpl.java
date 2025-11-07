@@ -17,11 +17,11 @@ public class ProductAdapterImpl implements ProductAdapter {
 
     @Override
     public Optional<Product> findByCodeAndWarehouse(String code, Warehouse warehouse) {
-        return productRepository.findByCodeAndWarehouse(code, warehouse);
+        return productRepository.findBySkuCodeAndWarehouse(code, warehouse);
     }
 
     @Override
     public Optional<Product> findByCode(String code) {
-        return productRepository.findByCode(code);
+        return productRepository.findBySkuCodeAndIsDeletedFalse(code);
     }
 }

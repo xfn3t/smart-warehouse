@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.rtc.warehouse.exception.InventoryImportException;
+import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryCsvDto;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
@@ -16,12 +17,15 @@ import ru.rtc.warehouse.inventory.service.adapter.IHProductEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.csv.InventoryImportService;
-import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.product.model.Product;
+import ru.rtc.warehouse.product.model.ProductWarehouse;
+import ru.rtc.warehouse.product.service.ProductWarehouseEntityService;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +37,7 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 	private final IHWarehouseEntServiceAdapter warehouseService;
 	private final IHLocationEntServiceAdapter locationService;
 	private final IHProductEntServiceAdapter productService;
+	private final ProductWarehouseEntityService productWarehouseEntityService;
 	private final InventoryHistoryStatusService inventoryHistoryStatusService;
 	private final CsvProcessingService csvProcessingService;
 
@@ -64,23 +69,15 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 						", ряд=" + record.getRow() + ", полка=" + record.getShelf());
 			}
 
-			// Генерируем SKU код по старому паттерну
-			String skuCode = generateSkuCode(record.getZone(), record.getRow(), record.getShelf(), warehouse.getCode());
+			// Ищем продукт по имени и категории или создаем новый
+			Product product = findOrCreateProduct(record, warehouse);
 
-			// Создаем продукт
-			Product product = Product.builder()
-					.name(record.getName())
-					.category(record.getCategory())
-					.minStock(record.getMinStock())
-					.optimalStock(record.getOptimalStock())
-					.code(skuCode)
-					.build();
-
-			product = productService.save(product);
+			// Получаем параметры склада для продукта
+			ProductWarehouse productWarehouse = findOrCreateProductWarehouse(product, warehouse, record);
 
 			// Определяем статус инвентаризации
 			InventoryHistoryStatus inventoryHistoryStatus = calculateInventoryStatus(
-					record.getQuantity(), record.getMinStock(), record.getOptimalStock());
+					record.getQuantity(), productWarehouse.getMinStock(), productWarehouse.getOptimalStock());
 
 			// Создаем запись в истории инвентаризации
 			InventoryHistory inventoryHistory = createInventoryHistory(record, warehouse, location, product, inventoryHistoryStatus);
@@ -92,17 +89,61 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 		}
 	}
 
-	private String generateSkuCode(Integer zone, Integer row, Integer shelf, String warehouseCode) {
-		// Упрощенный паттерн: SKU111-WH002
-		// Где: SKU - префикс, 111 - zone+row+shelf, WH002 - код склада
-		String locationPart = String.format("%d%d%d", zone, row, shelf);
-		String warehousePart = warehouseCode.startsWith("WH") ? warehouseCode : "WH" + warehouseCode;
+	private Product findOrCreateProduct(InventoryCsvDto record, Warehouse warehouse) {
+		// Пытаемся найти продукт по SKU (если он был сгенерирован ранее)
+		String generatedSku = generateSkuCode(record.getName(), record.getCategory(), warehouse.getCode());
 
-		return String.format("SKU%s-%s", locationPart, warehousePart);
+		try {
+			return productService.findByCode(generatedSku);
+		} catch (NotFoundException e) {
+			// Если не найден - создаем новый
+			Product newProduct = Product.builder()
+					.name(record.getName())
+					.category(record.getCategory())
+					.skuCode(generatedSku)
+					.isDeleted(false)
+					.build();
+			return productService.save(newProduct);
+		}
+	}
+
+	private ProductWarehouse findOrCreateProductWarehouse(Product product, Warehouse warehouse, InventoryCsvDto record) {
+		Optional<ProductWarehouse> existingProductWarehouse = productWarehouseEntityService
+				.findActiveByProductAndWarehouse(product.getId(), warehouse.getId());
+
+		if (existingProductWarehouse.isPresent()) {
+			ProductWarehouse productWarehouse = existingProductWarehouse.get();
+			// Обновляем параметры если нужно
+			if (!productWarehouse.getMinStock().equals(record.getMinStock()) ||
+					!productWarehouse.getOptimalStock().equals(record.getOptimalStock())) {
+				productWarehouse.setMinStock(record.getMinStock());
+				productWarehouse.setOptimalStock(record.getOptimalStock());
+				return productWarehouseEntityService.update(productWarehouse);
+			}
+			return productWarehouse;
+		} else {
+			// Создаем новую связь продукт-склад
+			ProductWarehouse newProductWarehouse = ProductWarehouse.builder()
+					.product(product)
+					.warehouse(warehouse)
+					.minStock(record.getMinStock())
+					.optimalStock(record.getOptimalStock())
+					.createdAt(LocalDateTime.now())
+					.isDeleted(false)
+					.build();
+			return productWarehouseEntityService.save(newProductWarehouse);
+		}
+	}
+
+	private String generateSkuCode(String name, String category, String warehouseCode) {
+		// Генерируем SKU на основе имени, категории и склада
+		String base = (name.substring(0, Math.min(3, name.length())) +
+				(category != null ? category.substring(0, Math.min(3, category.length())) : "GEN"));
+		String cleanBase = base.toUpperCase().replaceAll("[^A-Z0-9]", "");
+		return String.format("%s-%s", cleanBase, warehouseCode);
 	}
 
 	private InventoryHistoryStatus calculateInventoryStatus(Integer quantity, Integer minStock, Integer optimalStock) {
-		// Логика определения статуса из старой реализации
 		if (quantity <= minStock) {
 			return inventoryHistoryStatusService.findByCode(InventoryHistoryStatus.InventoryHistoryStatusCode.CRITICAL);
 		}
@@ -122,6 +163,9 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 		if (record.getZone() == null || record.getRow() == null || record.getShelf() == null) {
 			throw new InventoryImportException("Неверный формат локации");
 		}
+		if (record.getMinStock() == null || record.getOptimalStock() == null) {
+			throw new InventoryImportException("minStock и optimalStock обязательны");
+		}
 	}
 
 	private InventoryHistory createInventoryHistory(InventoryCsvDto record, Warehouse warehouse,
@@ -132,7 +176,7 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 				.location(location)
 				.product(product)
 				.quantity(record.getQuantity())
-				.expectedQuantity(record.getQuantity())
+				.expectedQuantity(record.getQuantity()) // В CSV импорте expected = actual
 				.difference(0)
 				.status(status)
 				.scannedAt(LocalDateTime.now())

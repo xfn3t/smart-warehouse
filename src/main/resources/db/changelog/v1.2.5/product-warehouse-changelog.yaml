@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.1-create-product-warehouse
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: product_warehouse
+      changes:
+        - createTable:
+            tableName: product_warehouse
+            remarks: Параметры запасов продуктов по складам
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_warehouse_product
+                    references: products(id)
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_warehouse_warehouse
+                    references: warehouses(id)
+              - column:
+                  name: min_stock
+                  type: INTEGER
+                  remarks: Минимальный запас продукта на всем складе
+              - column:
+                  name: optimal_stock
+                  type: INTEGER
+                  remarks: Оптимальный запас продукта на всем складе
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+        - addUniqueConstraint:
+            tableName: product_warehouse
+            columnNames: product_id, warehouse_id
+            constraintName: uk_product_warehouse
+
+  - changeSet:
+      id: v1.1-migrate-stock-data
+      author: dev
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO product_warehouse (product_id, warehouse_id, min_stock, optimal_stock)
+              SELECT DISTINCT p.id, w.id, p.min_stock, p.optimal_stock
+              FROM products p
+              CROSS JOIN warehouses w
+              WHERE NOT EXISTS (
+                SELECT 1 FROM product_warehouse pw 
+                WHERE pw.product_id = p.id AND pw.warehouse_id = w.id
+              )
+
+  - changeSet:
+      id: v1.1-remove-stock-from-products
+      author: dev
+      changes:
+        - dropColumn:
+            tableName: products
+            columnName: min_stock
+        - dropColumn:
+            tableName: products
+            columnName: optimal_stock

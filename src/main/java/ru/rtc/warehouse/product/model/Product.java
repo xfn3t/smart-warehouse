@@ -2,6 +2,10 @@ package ru.rtc.warehouse.product.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.rtc.warehouse.inventory.model.InventoryHistory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -11,29 +15,25 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Product {
-
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "sku_code", length = 50, nullable = false, unique = true)
-	private String code;
+	@Column(name = "sku_code", unique = true, nullable = false)
+	private String skuCode;
 
-	@Column(nullable = false, length = 255)
+	@Column(name = "name", nullable = false)
 	private String name;
 
-	@Column(length = 100)
+	@Column(name = "category")
 	private String category;
 
-	@Column(name = "min_stock", nullable = false)
-	@Builder.Default
-	private Integer minStock = 10;
+	@Column(name = "is_deleted")
+	private Boolean isDeleted = false;
 
-	@Column(name = "optimal_stock", nullable = false)
-	@Builder.Default
-	private Integer optimalStock = 100;
+	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<ProductWarehouse> warehouseParameters = new ArrayList<>();
 
-	@Column(name = "is_deleted", nullable = false)
-	@Builder.Default
-	private boolean isDeleted = false;
+	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+	private List<InventoryHistory> inventoryHistory = new ArrayList<>();
 }

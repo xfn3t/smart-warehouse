@@ -100,7 +100,7 @@ public class InventoryHistorySpecifications {
             Join<Object, Object> robotJoin = root.join("robot", JoinType.LEFT);
 
             return cb.or(
-                    cb.like(cb.lower(productJoin.get("code")), likePattern),
+                    cb.like(cb.lower(productJoin.get("skuCode")), likePattern),
                     cb.like(cb.lower(productJoin.get("name")), likePattern),
                     cb.like(cb.lower(robotJoin.get("code")), likePattern)
             );

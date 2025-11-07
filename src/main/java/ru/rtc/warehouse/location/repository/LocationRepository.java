@@ -2,6 +2,7 @@ package ru.rtc.warehouse.location.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
@@ -13,10 +14,12 @@ import java.util.Optional;
 public interface LocationRepository extends JpaRepository<Location, Long> {
 	List<Location> findByWarehouse(Warehouse warehouse);
 
-	@Query("SELECT l FROM location l WHERE l.zone=:zone AND l.row=:row AND l.shelf=:shelf AND l.warehouse.id=:warehouseId")
-	Optional<Location> findByCoordinate(Integer zone, Integer row, Integer shelf, Long warehouseId);
+	@Query("SELECT l FROM location l WHERE l.zone = :zone AND l.row = :row AND l.shelf = :shelf AND l.warehouse.id = :warehouseId")
+	Optional<Location> findByCoordinate(@Param("zone") Integer zone,
+										@Param("row") Integer row,
+										@Param("shelf") Integer shelf,
+										@Param("warehouseId") Long warehouseId);
 
 	Optional<Location> findByWarehouseAndZoneAndRowAndShelf(Warehouse warehouse, Integer zone, Integer row,
-			Integer shelf);
-	
+															Integer shelf);
 }

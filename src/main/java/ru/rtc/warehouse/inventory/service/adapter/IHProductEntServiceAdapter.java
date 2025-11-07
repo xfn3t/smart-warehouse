@@ -19,4 +19,8 @@ public class IHProductEntServiceAdapter {
 		return productEntityService.save(product);
 	}
 
+	public Product findByNameAndCategory(String name, String category) {
+		return productEntityService.findByNameAndCategory(name, category);
+	}
+
 }

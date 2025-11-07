@@ -57,7 +57,7 @@ public class InventoryHistoryEntityServiceImpl implements InventoryHistoryEntity
 
 	@Override
 	public List<InventoryHistory> findAllByWarehouseCodeAndProductCode(String warehouseCode, String productCode) {
-		return inventoryHistoryRepository.findAllByWarehouseCodeAndProductCode(warehouseCode, productCode);
+		return inventoryHistoryRepository.findAllByWarehouseCodeAndProductSkuCode(warehouseCode, productCode);
 	}
 
 	@Override

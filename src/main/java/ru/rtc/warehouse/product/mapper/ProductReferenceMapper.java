@@ -9,14 +9,14 @@ public class ProductReferenceMapper {
 
 	@Named("mapProductToString")
 	public String mapProductToString(Product product) {
-		return product != null ? product.getCode() : null;
+		return product != null ? product.getSkuCode() : null;
 	}
 
 	@Named("mapStringToProduct")
-	public Product mapStringToProduct(String code) {
-		if (code == null) return null;
+	public Product mapStringToProduct(String skuCode) {
+		if (skuCode == null) return null;
 		Product product = new Product();
-		product.setCode(code);
+		product.setSkuCode(skuCode);
 		return product;
 	}
 }

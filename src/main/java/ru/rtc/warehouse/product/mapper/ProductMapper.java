@@ -12,18 +12,27 @@ import java.util.List;
 
 @Mapper(
 		componentModel = "spring",
-		uses = {WarehouseMapper.class},
+		uses = {WarehouseMapper.class, ProductWarehouseMapper.class},
 		unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public interface ProductMapper {
 
+	@Mapping(target = "code", source = "skuCode")
 	ProductDTO toDto(Product entity);
 
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "skuCode", ignore = true)
 	@Mapping(target = "isDeleted", ignore = true)
+	@Mapping(target = "warehouseParameters", ignore = true)
+	@Mapping(target = "inventoryHistory", ignore = true)
 	Product toEntity(ProductDTO dto);
 
 	List<ProductDTO> toDtoList(List<Product> entities);
 
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "skuCode", ignore = true)
 	@Mapping(target = "isDeleted", ignore = true)
+	@Mapping(target = "warehouseParameters", ignore = true)
+	@Mapping(target = "inventoryHistory", ignore = true)
 	Product toEntity(ProductCreateRequest dto);
 }

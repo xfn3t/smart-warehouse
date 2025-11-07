@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -11,6 +12,7 @@ import org.springframework.web.context.request.WebRequest;
 import jakarta.validation.ConstraintViolationException;
 import ru.rtc.warehouse.exception.response.ErrorResponse;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -72,6 +74,7 @@ public class GlobalExceptionHandler {
 				.message(message)
 				.path(request.getDescription(false))
 				.build();
+		log.error(message);
 
 		return new ResponseEntity<>(error, status);
 	}

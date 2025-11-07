@@ -15,11 +15,6 @@ import ru.rtc.warehouse.robot.model.Robot;
 
 import java.util.List;
 
-/**
- * MapStruct-маппер истории инвентаризаций.
- * - Entity → DTO: разворачиваем robot/product в плоские поля.
- * - DTO/Requests → Entity: резолвим ссылки по кодам через сервисы.
- */
 @Mapper(
 		componentModel = "spring",
 		unmappedTargetPolicy = ReportingPolicy.IGNORE
@@ -37,7 +32,7 @@ public abstract class InventoryHistoryMapper {
 
 	@Mappings({
 			@Mapping(target = "robotCode", source = "robot.code"),
-			@Mapping(target = "skuCode", source = "product.code"),
+			@Mapping(target = "skuCode", source = "product.skuCode"), // Использовать skuCode
 			@Mapping(target = "productName", source = "product.name"),
 			@Mapping(target = "robot", ignore = true),
 			@Mapping(target = "product", ignore = true),
@@ -48,11 +43,11 @@ public abstract class InventoryHistoryMapper {
 
 	public abstract List<InventoryHistoryDTO> toDtoList(List<InventoryHistory> entities);
 
-	// DTO -> Entity: резолвим ссылки по кодам
+	// DTO -> Entity: разрешаем ссылки по кодам
 	@Mappings({
 			@Mapping(target = "robot", source = "robotCode", qualifiedByName = "resolveRobot"),
 			@Mapping(target = "product", source = "skuCode", qualifiedByName = "resolveProductBySku"),
-			@Mapping(target = "status", source = "status", qualifiedByName = "resolveStatus") // из enum в сущность
+			@Mapping(target = "status", source = "status", qualifiedByName = "resolveStatus")
 	})
 	public abstract InventoryHistory toEntity(InventoryHistoryDTO dto);
 
@@ -68,7 +63,6 @@ public abstract class InventoryHistoryMapper {
 			@Mapping(target = "status",  source = "status",      qualifiedByName = "resolveStatus")
 	})
 	public abstract InventoryHistory toEntity(InventoryHistoryUpdateRequest dto);
-
 
 	public abstract List<InventoryHistory> toEntityList(List<InventoryHistoryDTO> dtos);
 

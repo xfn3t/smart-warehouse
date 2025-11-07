@@ -8,11 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ProductCreateRequest {
-
-	@NotNull(message = "Code can't be null")
-	@Size(max = 50, message = "Code must not exceed 50 characters")
-	private String code;
-
 	@NotNull(message = "Product name is required")
 	@Size(min = 1, max = 255, message = "Product name must be between 1 and 255 characters")
 	private String name;

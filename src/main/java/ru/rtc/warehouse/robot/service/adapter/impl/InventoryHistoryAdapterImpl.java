@@ -19,6 +19,6 @@ public class InventoryHistoryAdapterImpl implements InventoryHistoryAdapter {
 
     @Override
     public Optional<InventoryHistory> findLatestByProductCodeAndLocationAndWarehouse(String productCode, Location location, Warehouse warehouse) {
-        return inventoryHistoryRepository.findFirstByProduct_CodeAndLocationAndWarehouseOrderByScannedAtDesc(productCode, location, warehouse);
+        return inventoryHistoryRepository.findFirstByProduct_SkuCodeAndLocationAndWarehouseOrderByScannedAtDesc(productCode, location, warehouse);
     }
 }

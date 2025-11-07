@@ -7,10 +7,9 @@ import ru.rtc.warehouse.product.service.dto.ProductDTO;
 import java.util.List;
 
 public interface ProductService {
-	void save(ProductCreateRequest productCreateRequest);
-	void update(ProductUpdateRequest updateRequest, Long id);
-	ProductDTO findById(Long id);
-	ProductDTO findByCode(String code);
+	ProductDTO create(String warehouseCode, ProductCreateRequest productCreateRequest);
+	ProductDTO update(ProductUpdateRequest updateRequest, String productCode);
+	ProductDTO findByCode(String productCode);
 	List<ProductDTO> findAll();
-	void delete(Long id);
+	void delete(String productCode);
 }

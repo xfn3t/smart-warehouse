@@ -11,6 +11,8 @@ import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.dto.UserDTO;
 import ru.rtc.warehouse.warehouse.mapper.WarehouseMapper;
 
+import java.util.List;
+
 @Mapper(
 		componentModel = "spring",
 		uses = {RoleMapper.class, WarehouseMapper.class},
@@ -52,4 +54,6 @@ public interface UserMapper {
 				.code(RoleCode.VIEWER)
 				.build();
 	}
+
+	List<UserDTO> toDtoList(List<User> allByWarehouse);
 }

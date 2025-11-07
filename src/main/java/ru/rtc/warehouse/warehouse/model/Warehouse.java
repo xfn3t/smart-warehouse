@@ -2,10 +2,14 @@ package ru.rtc.warehouse.warehouse.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.product.model.ProductWarehouse;
 import ru.rtc.warehouse.user.model.User;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -50,6 +54,12 @@ public class Warehouse {
 	)
 	@Builder.Default
 	private Set<User> users = new HashSet<>();
+
+	@OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<ProductWarehouse> productParameters = new ArrayList<>();
+
+	@OneToMany(mappedBy = "warehouse", fetch = FetchType.LAZY)
+	private List<InventoryHistory> inventoryHistory = new ArrayList<>();
 
 	@Builder.Default
 	@Column(name = "is_deleted", nullable = false)

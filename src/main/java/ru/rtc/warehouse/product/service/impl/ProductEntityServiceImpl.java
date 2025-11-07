@@ -1,9 +1,7 @@
 package ru.rtc.warehouse.product.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.product.repository.ProductRepository;
@@ -11,7 +9,6 @@ import ru.rtc.warehouse.product.service.ProductEntityService;
 
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductEntityServiceImpl implements ProductEntityService {
@@ -46,19 +43,23 @@ public class ProductEntityServiceImpl implements ProductEntityService {
 
 	@Override
 	public Product findByCode(String code) {
-		return productRepository.findByCodeAndIsDeletedFalse(code)
+		return productRepository.findBySkuCodeAndIsDeletedFalse(code)
 				.orElseThrow(() -> new NotFoundException("Product not found"));
 	}
 
-	@Transactional(readOnly = true)
+	@Override
 	public List<Product> findAllActiveProducts() {
-		log.info("Finding all active products");
+		return productRepository.findAllActiveProducts();
+	}
 
-		try {
-			return productRepository.findAllActiveProducts();
-		} catch (Exception e) {
-			log.error("Error finding all active products", e);
-			throw new RuntimeException("Failed to retrieve active products", e);
-		}
+	@Override
+	public Long count() {
+		return productRepository.count();
+	}
+
+	@Override
+	public Product findByNameAndCategory(String name, String category) {
+		return productRepository.findByNameAndCategoryAndIsDeletedFalse(name, category)
+				.orElseThrow(() -> new NotFoundException("Product not found"));
 	}
 }

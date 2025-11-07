@@ -111,7 +111,7 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 
 	@Override
 	public List<InventoryHistoryDTO> findAllByWarehouseCodeAndProductCode(String warehouseCode, String productCode) {
-		return ihMapper.toDtoList(inventoryHistoryRepository.findAllByWarehouseCodeAndProductCode(warehouseCode, productCode));
+		return ihMapper.toDtoList(inventoryHistoryRepository.findAllByWarehouseCodeAndProductSkuCode(warehouseCode, productCode));
 	}
 
 	@Override

@@ -52,8 +52,8 @@ public class RealtimeMetricsWriter {
 
         // critical SKUs
         Product p = ih.getProduct();
-        if (p != null && p.getCode() != null && ih.getStatus() != null && ih.getStatus().getCode() != null) {
-            String sku = p.getCode();
+        if (p != null && p.getSkuCode() != null && ih.getStatus() != null && ih.getStatus().getCode() != null) {
+            String sku = p.getSkuCode();
             if (ih.getStatus().getCode() == InventoryHistoryStatusCode.CRITICAL) {
                 rt.opsForSet().add(RealtimeRedisKeys.criticalSkuSet(warehouseCode), sku);
             } else {

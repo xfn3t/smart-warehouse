@@ -12,9 +12,7 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-
-	// Базовые методы
-	Optional<Product> findByCodeAndIsDeletedFalse(String code);
+	Optional<Product> findBySkuCodeAndIsDeletedFalse(String skuCode);
 
 	@Query("SELECT p FROM Product p WHERE p.isDeleted = false")
 	List<Product> findAllActiveProducts();
@@ -24,18 +22,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	@Query("SELECT p FROM Product p WHERE p.name LIKE %:name% AND p.isDeleted = false")
 	List<Product> findByNameContainingAndIsDeletedFalse(@Param("name") String name);
 
-	boolean existsByCodeAndIsDeletedFalse(String code);
+	boolean existsBySkuCodeAndIsDeletedFalse(String skuCode);
 
-	Optional<Product> findByCode(String code);
+	@Query("SELECT p FROM Product p WHERE p.name = :name AND p.category = :category AND p.isDeleted = false")
+	Optional<Product> findByNameAndCategoryAndIsDeletedFalse(@Param("name") String name,
+															 @Param("category") String category);
 
-	@Query("""
-        SELECT DISTINCT p
-        FROM Product p
-        JOIN InventoryHistory ih ON ih.product = p
-        WHERE p.code = :code
-          AND ih.warehouse = :warehouse
-          AND p.isDeleted = false
-          AND ih.isDeleted = false
-    """)
-	Optional<Product> findByCodeAndWarehouse(@Param("code") String code, @Param("warehouse") Warehouse warehouse);
+	@Query("SELECT p FROM Product p " +
+			"JOIN p.warehouseParameters pw " +
+			"WHERE p.skuCode = :skuCode " +
+			"AND pw.warehouse = :warehouse " +
+			"AND p.isDeleted = false " +
+			"AND pw.isDeleted = false")
+	Optional<Product> findBySkuCodeAndWarehouse(
+			@Param("skuCode") String skuCode,
+			@Param("warehouse") Warehouse warehouse);
 }

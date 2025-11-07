@@ -105,14 +105,14 @@ public interface InventoryHistoryRepository extends
 	List<InventoryHistory> findByProductAndPeriod(Long productId, LocalDateTime from, LocalDateTime to);
 
 	@Query("""
-		SELECT ih
-		FROM InventoryHistory ih
-		WHERE ih.product.code = :sku 
-		  AND ih.isDeleted = false
-		  AND ih.warehouse.code = :warehouseCode
-		ORDER BY ih.scannedAt DESC
-		LIMIT 1
-	""")
+            SELECT ih
+            FROM InventoryHistory ih
+            WHERE ih.product.skuCode = :sku
+              AND ih.isDeleted = false
+              AND ih.warehouse.code = :warehouseCode
+            ORDER BY ih.scannedAt DESC
+            LIMIT 1
+    """)
 	Optional<InventoryHistory> findByProductSKU(@Param("sku") String sku, @Param("warehouseCode") String warehouseCode);
 
 	@Query("SELECT ih FROM InventoryHistory ih WHERE ih.product.id = :productId " +
@@ -152,76 +152,76 @@ public interface InventoryHistoryRepository extends
 
 	@Query(
 			value = """
-        SELECT *
-        FROM (
-            SELECT 
-                p.sku_code AS productCode,
-                p.name AS productName,
-                p.category AS category,
-                ih.expected_quantity as expectedQuantity,
-                ih.quantity AS actualQuantity,
-                ih.difference AS difference,
-                ih.scanned_at AS lastScannedAt,
-                s.code AS statusCode,
-                r.robot_code AS robotCode,
-                ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY ih.scanned_at DESC, ih.id DESC) AS rn
-            FROM products p
-            JOIN inventory_history ih ON p.id = ih.product_id
-            JOIN warehouses w ON w.id = ih.warehouse_id
-            LEFT JOIN inventory_status s ON ih.status_id = s.id
-            LEFT JOIN robots r ON ih.robot_id = r.id
-            WHERE p.is_deleted = false
-              AND ih.is_deleted = false
-              AND w.code = :warehouseCode
-              AND (
-                  COALESCE(:categories, ARRAY[]::varchar[]) = '{}' OR p.category = ANY(:categories)
-              )
-              AND (
-                  COALESCE(:statuses, ARRAY[]::varchar[]) = '{}' OR s.code = ANY(:statuses)
-              )
-              AND (
-                  :searchQuery IS NULL OR 
-                  LOWER(p.sku_code) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                  LOWER(p.name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                  LOWER(r.robot_code) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-              )
-              AND (
-                  COALESCE(:robots, ARRAY[]::varchar[]) = '{}' OR r.robot_code = ANY(:robots)
-              )
-        ) ranked
-        WHERE rn = 1
-        ORDER BY productCode DESC
-        """,
+    SELECT *
+    FROM (
+        SELECT
+            p.sku_code AS productCode,
+            p.name AS productName,
+            p.category AS category,
+            ih.expected_quantity as expectedQuantity,
+            ih.quantity AS actualQuantity,
+            ih.difference AS difference,
+            ih.scanned_at AS lastScannedAt,
+            s.code AS statusCode,
+            r.robot_code AS robotCode,
+            ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY ih.scanned_at DESC, ih.id DESC) AS rn
+        FROM products p
+        JOIN inventory_history ih ON p.id = ih.product_id
+        JOIN warehouses w ON w.id = ih.warehouse_id
+        LEFT JOIN inventory_status s ON ih.status_id = s.id
+        LEFT JOIN robots r ON ih.robot_id = r.id
+        WHERE p.is_deleted = false
+          AND ih.is_deleted = false
+          AND w.code = :warehouseCode
+          AND (
+              COALESCE(:categories, ARRAY[]::varchar[]) = '{}' OR p.category = ANY(:categories)
+          )
+          AND (
+              COALESCE(:statuses, ARRAY[]::varchar[]) = '{}' OR s.code = ANY(:statuses)
+          )
+          AND (
+              :searchQuery IS NULL OR
+              LOWER(p.sku_code) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
+              LOWER(p.name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
+              LOWER(r.robot_code) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
+          )
+          AND (
+              COALESCE(:robots, ARRAY[]::varchar[]) = '{}' OR r.robot_code = ANY(:robots)
+          )
+    ) ranked
+    WHERE rn = 1
+    ORDER BY productCode DESC
+    """,
 			countQuery = """
-        SELECT COUNT(*)
-        FROM (
-            SELECT p.id
-            FROM products p
-            JOIN inventory_history ih ON p.id = ih.product_id
-            JOIN warehouses w ON w.id = ih.warehouse_id
-            LEFT JOIN inventory_status s ON ih.status_id = s.id
-            LEFT JOIN robots r ON ih.robot_id = r.id
-            WHERE p.is_deleted = false
-              AND ih.is_deleted = false
-              AND w.code = :warehouseCode
-              AND (
-                  COALESCE(:categories, ARRAY[]::varchar[]) = '{}' OR p.category = ANY(:categories)
-              )
-              AND (
-                  COALESCE(:statuses, ARRAY[]::varchar[]) = '{}' OR s.code = ANY(:statuses)
-              )
-              AND (
-                  :searchQuery IS NULL OR 
-                  LOWER(p.sku_code) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                  LOWER(p.name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                  LOWER(r.robot_code) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-              )
-              AND (
-                  COALESCE(:robots, ARRAY[]::varchar[]) = '{}' OR r.robot_code = ANY(:robots)
-              )
-            GROUP BY p.id
-        ) counted
-        """,
+    SELECT COUNT(*)
+    FROM (
+        SELECT p.id
+        FROM products p
+        JOIN inventory_history ih ON p.id = ih.product_id
+        JOIN warehouses w ON w.id = ih.warehouse_id
+        LEFT JOIN inventory_status s ON ih.status_id = s.id
+        LEFT JOIN robots r ON ih.robot_id = r.id
+        WHERE p.is_deleted = false
+          AND ih.is_deleted = false
+          AND w.code = :warehouseCode
+          AND (
+              COALESCE(:categories, ARRAY[]::varchar[]) = '{}' OR p.category = ANY(:categories)
+          )
+          AND (
+              COALESCE(:statuses, ARRAY[]::varchar[]) = '{}' OR s.code = ANY(:statuses)
+          )
+          AND (
+              :searchQuery IS NULL OR
+              LOWER(p.sku_code) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
+              LOWER(p.name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
+              LOWER(r.robot_code) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
+          )
+          AND (
+              COALESCE(:robots, ARRAY[]::varchar[]) = '{}' OR r.robot_code = ANY(:robots)
+          )
+        GROUP BY p.id
+    ) counted
+    """,
 			nativeQuery = true
 	)
 	Page<ProductWithLastInventoryProjection> findProductsWithLastInventoryByWarehouseWithFilters(
@@ -234,8 +234,9 @@ public interface InventoryHistoryRepository extends
 	);
 
 
-	@Query("SELECT ih FROM InventoryHistory ih WHERE ih.warehouse.code=:warehouseCode AND ih.product.code=:productCode")
-	List<InventoryHistory> findAllByWarehouseCodeAndProductCode(String warehouseCode, String productCode);
+	@Query("SELECT ih FROM InventoryHistory ih WHERE ih.warehouse.code=:warehouseCode AND ih.product.skuCode=:skuCode")
+	List<InventoryHistory> findAllByWarehouseCodeAndProductSkuCode(@Param("warehouseCode") String warehouseCode,
+																   @Param("skuCode") String skuCode);
 
 
 	@Query("SELECT COUNT(ih) FROM InventoryHistory ih " +
@@ -244,39 +245,40 @@ public interface InventoryHistoryRepository extends
 									@Param("warehouse") Warehouse warehouse);
 
 	@Query("""
-		SELECT ih
-		FROM InventoryHistory ih
-		JOIN FETCH ih.product
-		JOIN FETCH ih.warehouse
-		LEFT JOIN FETCH ih.robot
-		WHERE ih.warehouse.code = :warehouseCode
-		  AND ih.product.code IN :productCodes
-		  AND ih.isDeleted = false
-		ORDER BY ih.product.code, ih.scannedAt DESC
-	""")
+            SELECT ih
+            FROM InventoryHistory ih
+            JOIN FETCH ih.product
+            JOIN FETCH ih.warehouse
+            LEFT JOIN FETCH ih.robot
+            WHERE ih.warehouse.code = :warehouseCode
+              AND ih.product.skuCode IN :productCodes
+              AND ih.isDeleted = false
+            ORDER BY ih.product.skuCode, ih.scannedAt DESC
+    """)
 	List<InventoryHistory> findAllByWarehouseCodeAndProductCodes(
 			@Param("warehouseCode") String warehouseCode,
 			@Param("productCodes") List<String> productCodes);
 
 
 	@Query("""
-		SELECT 
-			p.name AS productName,
-			p.code AS productCode,
-			p.minStock AS minStock,
-			ih.quantity AS quantity,
-			(p.minStock - ih.quantity) AS replenish
-		FROM InventoryHistory ih
-		JOIN ih.product p
-		JOIN ih.warehouse w
-		WHERE ih.isDeleted = false
-		  AND p.isDeleted = false
-		  AND w.code = :warehouseCode
-		  AND ih.quantity <= p.minStock
-	""")
+        SELECT
+            p.name AS productName,
+            p.skuCode AS productCode,
+            pw.minStock AS minStock,
+            ih.quantity AS quantity,
+            (pw.minStock - ih.quantity) AS replenish
+        FROM InventoryHistory ih
+        JOIN ih.product p
+        JOIN ih.warehouse w
+        JOIN ProductWarehouse pw ON pw.product = p AND pw.warehouse = w AND pw.isDeleted = false
+        WHERE ih.isDeleted = false
+          AND p.isDeleted = false
+          AND w.code = :warehouseCode
+          AND ih.quantity <= pw.minStock
+    """)
 	List<LowStockProductDTO> findLowStockProductsByWarehouse(@Param("warehouseCode") String warehouseCode);
 
-   Optional<InventoryHistory> findFirstByProduct_CodeAndLocationAndWarehouseOrderByScannedAtDesc(String skuCode, Location location, Warehouse warehouse);
+   Optional<InventoryHistory> findFirstByProduct_SkuCodeAndLocationAndWarehouseOrderByScannedAtDesc(String skuCode, Location location, Warehouse warehouse);
 
    // последние N записей для локации
    List<InventoryHistory> findTopNByLocationAndWarehouseOrderByScannedAtDesc(Location location, Warehouse warehouse, Pageable pageable);

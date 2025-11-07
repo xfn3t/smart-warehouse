@@ -61,4 +61,11 @@ public class UserEntityServiceImpl implements UserEntityService {
 	public User saveUser(User user) {
 		return userRepository.save(user);
 	}
+
+	@Override
+	public List<User> findAllByWarehouse(String warehouseCode) {
+		return userRepository.findAllByWarehouseCode(warehouseCode);
+	}
+
+
 }
