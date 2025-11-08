@@ -1,8 +1,9 @@
 package ru.rtc.warehouse.ai.service;
 
+import ru.rtc.warehouse.ai.service.feign.dto.response.StockPredictionResponse;
+
 import java.util.List;
-import java.util.Map;
 
 public interface PredictionService {
-	Map<String, Object> predictStock(List<String> sku, String warehouseCode);
+	StockPredictionResponse predictStock(List<String> sku, String warehouseCode);
 }

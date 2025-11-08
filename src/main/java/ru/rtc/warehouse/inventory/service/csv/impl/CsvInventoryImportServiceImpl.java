@@ -25,7 +25,6 @@ import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -108,11 +107,10 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 	}
 
 	private ProductWarehouse findOrCreateProductWarehouse(Product product, Warehouse warehouse, InventoryCsvDto record) {
-		Optional<ProductWarehouse> existingProductWarehouse = productWarehouseEntityService
-				.findActiveByProductAndWarehouse(product.getId(), warehouse.getId());
 
-		if (existingProductWarehouse.isPresent()) {
-			ProductWarehouse productWarehouse = existingProductWarehouse.get();
+		try {
+			ProductWarehouse productWarehouse = productWarehouseEntityService
+					.findActiveByProductAndWarehouse(product.getId(), warehouse.getId());
 			// Обновляем параметры если нужно
 			if (!productWarehouse.getMinStock().equals(record.getMinStock()) ||
 					!productWarehouse.getOptimalStock().equals(record.getOptimalStock())) {
@@ -121,7 +119,8 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 				return productWarehouseEntityService.update(productWarehouse);
 			}
 			return productWarehouse;
-		} else {
+
+		} catch (NotFoundException e){
 			// Создаем новую связь продукт-склад
 			ProductWarehouse newProductWarehouse = ProductWarehouse.builder()
 					.product(product)

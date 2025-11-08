@@ -22,11 +22,11 @@ class TrainRequest(BaseModel):
 
 
 def classify_critical_level(quantity: float, min_stock: float, optimal_stock: float, days_until_stockout: float) -> str:
-    if days_until_stockout < 7 or quantity <= min_stock:
+    if days_until_stockout < 7:
         return "CRITICAL"
-    elif days_until_stockout < 30 or quantity <= optimal_stock * 0.5:
+    elif days_until_stockout < 30:
         return "MEDIUM"
-    return "LOW"
+    return "OK"
 
 
 @router.post("/predict")

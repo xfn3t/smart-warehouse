@@ -12,7 +12,7 @@ public class IHProductEntServiceAdapter {
 	private final ProductEntityService productEntityService;
 
 	public Product findByCode(String code) {
-		return productEntityService.findByCode(code);
+		return productEntityService.findBySkuCode(code);
 	}
 
 	public Product save(Product product) {

@@ -62,7 +62,7 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	@Transactional
 	public ProductDTO update(ProductUpdateRequest updateRequest, String productCode) {
-		Product product = productEntityService.findByCode(productCode);
+		Product product = productEntityService.findBySkuCode(productCode);
 
 		if (updateRequest.getName() != null) product.setName(updateRequest.getName());
 		if (updateRequest.getCategory() != null) product.setCategory(updateRequest.getCategory());
@@ -73,7 +73,7 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public ProductDTO findByCode(String productCode) {
-		Product product = productEntityService.findByCode(productCode);
+		Product product = productEntityService.findBySkuCode(productCode);
 		return enrichProductWithWarehouseInfo(product);
 	}
 
@@ -88,7 +88,7 @@ public class ProductServiceImpl implements ProductService {
 	@Override
 	@Transactional
 	public void delete(String productCode) {
-		Product product = productEntityService.findByCode(productCode);
+		Product product = productEntityService.findBySkuCode(productCode);
 		product.setIsDeleted(true);
 		productEntityService.update(product);
 	}

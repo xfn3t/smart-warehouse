@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.2-add-warehouse-to-ai-predictions
+      author: dev
+      changes:
+        - addColumn:
+            tableName: ai_predictions
+            columns:
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: ai_predictions
+            baseColumnNames: warehouse_id
+            referencedTableName: warehouses
+            referencedColumnNames: id
+            constraintName: fk_ai_predictions_warehouse
+        - createIndex:
+            indexName: idx_ai_predictions_warehouse_date
+            tableName: ai_predictions
+            columns:
+              - column:
+                  name: warehouse_id
+              - column:
+                  name: prediction_date

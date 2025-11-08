@@ -26,4 +26,13 @@ public interface ProductWarehouseRepository extends JpaRepository<ProductWarehou
 
 	@Query("SELECT pw FROM ProductWarehouse pw WHERE pw.warehouse.id = :warehouseId AND pw.isDeleted = false")
 	List<ProductWarehouse> findActiveByWarehouseId(@Param("warehouseId") Long warehouseId);
+
+	@Query("SELECT pw FROM ProductWarehouse pw " +
+			"JOIN pw.product p " +
+			"JOIN pw.warehouse w " +
+			"WHERE p.skuCode = :sku " +
+			"AND w.code = :warehouseCode " +
+			"AND pw.isDeleted = false")
+	Optional<ProductWarehouse> findBySkuAndWarehouseCode(@Param("sku") String sku,
+														 @Param("warehouseCode") String warehouseCode);
 }

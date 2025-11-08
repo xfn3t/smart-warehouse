@@ -2,6 +2,7 @@ package ru.rtc.warehouse.product.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.product.model.ProductWarehouse;
 import ru.rtc.warehouse.product.repository.ProductWarehouseRepository;
 import ru.rtc.warehouse.product.service.ProductWarehouseEntityService;
@@ -56,12 +57,19 @@ public class ProductWarehouseEntityServiceImpl implements ProductWarehouseEntity
 	}
 
 	@Override
-	public Optional<ProductWarehouse> findActiveByProductAndWarehouse(Long productId, Long warehouseId) {
-		return productWarehouseRepository.findActiveByProductAndWarehouse(productId, warehouseId);
+	public ProductWarehouse findActiveByProductAndWarehouse(Long productId, Long warehouseId) {
+		return productWarehouseRepository.findActiveByProductAndWarehouse(productId, warehouseId)
+				.orElseThrow(() -> new NotFoundException("Product warehouse not found"));
 	}
 
 	@Override
 	public List<ProductWarehouse> findActiveByProductId(Long productId) {
 		return productWarehouseRepository.findActiveByProductId(productId);
+	}
+
+	@Override
+	public ProductWarehouse findBySkuAndWarehouseCode(String sku, String warehouseCode) {
+		return productWarehouseRepository.findBySkuAndWarehouseCode(sku, warehouseCode)
+				.orElseThrow(() -> new NotFoundException("Product warehouse not found"));
 	}
 }

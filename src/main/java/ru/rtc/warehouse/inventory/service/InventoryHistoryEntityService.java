@@ -18,4 +18,6 @@ public interface InventoryHistoryEntityService extends CrudEntityService<Invento
 	long countByWarehouseAndStatusAndScannedAtAfter(Warehouse warehouse, InventoryHistoryStatus.InventoryHistoryStatusCode inventoryHistoryStatusCode, LocalDateTime last24Hours);
 
 	boolean existsByLocationAndScannedAtAfter(Location location, LocalDateTime since);
+
+	InventoryHistory findLatestBySkuAndWarehouseCode(String sku, String warehouseCode);
 }

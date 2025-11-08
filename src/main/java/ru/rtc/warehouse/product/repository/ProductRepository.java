@@ -37,4 +37,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	Optional<Product> findBySkuCodeAndWarehouse(
 			@Param("skuCode") String skuCode,
 			@Param("warehouse") Warehouse warehouse);
+
+	@Query("SELECT DISTINCT p FROM Product p " +
+			"JOIN p.warehouseParameters pw " +
+			"JOIN pw.warehouse w " +
+			"WHERE w.code = :warehouseCode " +
+			"AND p.isDeleted = false " +
+			"AND pw.isDeleted = false")
+	List<Product> findByWarehouseCodeAndIsDeletedFalse(@Param("warehouseCode") String warehouseCode);
 }

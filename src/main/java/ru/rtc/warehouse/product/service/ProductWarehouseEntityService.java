@@ -10,6 +10,7 @@ public interface ProductWarehouseEntityService extends CrudEntityService<Product
 	Optional<ProductWarehouse> findByProductIdAndWarehouseId(Long productId, Long warehouseId);
 	List<ProductWarehouse> findByProductId(Long productId);
 	List<ProductWarehouse> findByWarehouseId(Long warehouseId);
-	Optional<ProductWarehouse> findActiveByProductAndWarehouse(Long productId, Long warehouseId);
+	ProductWarehouse findActiveByProductAndWarehouse(Long productId, Long warehouseId);
 	List<ProductWarehouse> findActiveByProductId(Long productId);
+	ProductWarehouse findBySkuAndWarehouseCode(String sku, String warehouseCode);
 }

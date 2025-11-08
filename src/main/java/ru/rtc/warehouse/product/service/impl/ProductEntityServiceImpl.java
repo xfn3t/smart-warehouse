@@ -42,7 +42,7 @@ public class ProductEntityServiceImpl implements ProductEntityService {
 	}
 
 	@Override
-	public Product findByCode(String code) {
+	public Product findBySkuCode(String code) {
 		return productRepository.findBySkuCodeAndIsDeletedFalse(code)
 				.orElseThrow(() -> new NotFoundException("Product not found"));
 	}
@@ -61,5 +61,10 @@ public class ProductEntityServiceImpl implements ProductEntityService {
 	public Product findByNameAndCategory(String name, String category) {
 		return productRepository.findByNameAndCategoryAndIsDeletedFalse(name, category)
 				.orElseThrow(() -> new NotFoundException("Product not found"));
+	}
+
+	@Override
+	public List<Product> findAllByWarehouseCode(String warehouseCode) {
+		return productRepository.findByWarehouseCodeAndIsDeletedFalse(warehouseCode);
 	}
 }

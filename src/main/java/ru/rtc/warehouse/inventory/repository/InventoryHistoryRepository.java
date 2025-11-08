@@ -303,4 +303,15 @@ public interface InventoryHistoryRepository extends
 	long countByWarehouseAndStatusAndScannedAtAfter(Warehouse warehouse, InventoryHistoryStatus.InventoryHistoryStatusCode status, LocalDateTime scannedAt);
 
 	boolean existsByLocationAndScannedAtAfter(Location location, LocalDateTime since);
+
+	@Query("SELECT ih FROM InventoryHistory ih " +
+			"JOIN ih.product p " +
+			"JOIN ih.warehouse w " +
+			"WHERE p.skuCode = :sku " +
+			"AND w.code = :warehouseCode " +
+			"AND ih.isDeleted = false " +
+			"ORDER BY ih.scannedAt DESC " +
+			"LIMIT 1")
+	Optional<InventoryHistory> findLatestBySkuAndWarehouseCode(@Param("sku") String sku,
+															   @Param("warehouseCode") String warehouseCode);
 }

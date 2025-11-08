@@ -75,6 +75,12 @@ public class InventoryHistoryEntityServiceImpl implements InventoryHistoryEntity
 		return inventoryHistoryRepository.existsByLocationAndScannedAtAfter(location, since);
 	}
 
+	@Override
+	public InventoryHistory findLatestBySkuAndWarehouseCode(String sku, String warehouseCode) {
+		return inventoryHistoryRepository.findLatestBySkuAndWarehouseCode(sku, warehouseCode)
+				.orElseThrow(() -> new NotFoundException("Inventory history not found"));
+	}
+
 	@Transactional(readOnly = true)
 	public InventoryHistory findLatestByProductId(Long productId) {
 		log.info("Finding latest inventory history for product ID: {}", productId);

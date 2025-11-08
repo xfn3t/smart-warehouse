@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 
 class DataBuilder:
     """
-    Builds dataset from inventory_history + products.
+    Builds dataset from inventory_history + products + product_warehouse.
     Features: quantity, expected_quantity, difference, min_stock, optimal_stock
     Targets: days_until_stockout, recommended_order
     """
@@ -18,24 +18,23 @@ class DataBuilder:
             ih.id AS inventory_id,
             ih.product_id,
             ih.warehouse_id,
-            ih.location_id,
             ih.quantity,
             ih.expected_quantity,
             ih.difference,
             ih.scanned_at,
-            p.min_stock,
-            p.optimal_stock
+            pw.min_stock,
+            pw.optimal_stock
         FROM inventory_history ih
-        JOIN products p ON p.id = ih.product_id
+        JOIN product_warehouse pw ON pw.product_id = ih.product_id AND pw.warehouse_id = ih.warehouse_id
         WHERE ih.is_deleted = false
-          AND p.is_deleted = false
+          AND pw.is_deleted = false
         ORDER BY ih.product_id, ih.scanned_at
         """
 
         df = pd.read_sql(query, self.engine)
 
         if df.empty:
-            raise ValueError("Нет данных в inventory_history (с JOIN products).")
+            raise ValueError("Нет данных в inventory_history (с JOIN product_warehouse).")
 
         # normalize types / datetime
         df['scanned_at'] = pd.to_datetime(df['scanned_at'])

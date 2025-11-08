@@ -6,8 +6,10 @@ import ru.rtc.warehouse.product.model.Product;
 import java.util.List;
 
 public interface ProductEntityService extends CrudEntityService<Product, Long> {
-	Product findByCode(String code);
+	Product findBySkuCode(String skuCode);
 	List<Product> findAllActiveProducts();
 	Long count();
 	Product findByNameAndCategory(String name, String category);
+
+	List<Product> findAllByWarehouseCode(String warehouseCode);
 }
