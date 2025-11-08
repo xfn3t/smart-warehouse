@@ -23,7 +23,7 @@ public class Robot {
 	@Column(name = "robot_code", length = 50, nullable = false, unique = true)
 	private String code;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "warehouse_id", nullable = false)
 	private Warehouse warehouse;
 
