@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.common.config;
+package ru.rtc.warehouse.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
