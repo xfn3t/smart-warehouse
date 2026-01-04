@@ -4,31 +4,39 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
-import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 
 import jakarta.persistence.criteria.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
-public class InventoryHistorySpecifications {
+public class ProductLastInventorySpecifications {
 
 	public static Specification<InventoryHistory> buildProductLastInventorySpec(
 			String warehouseCode,
 			List<String> categories,
-			List<InventoryHistoryStatus.InventoryHistoryStatusCode> statuses,
+			List<String> statusCodes,
 			String searchQuery,
 			List<String> robots) {
 
 		return notDeleted()
+				.and(productNotDeleted())
 				.and(byWarehouseCode(warehouseCode))
 				.and(byCategories(categories))
-				.and(byStatuses(statuses))
+				.and(byStatusCodes(statusCodes))
 				.and(bySearchQuery(searchQuery))
 				.and(byRobots(robots))
-				.and(isLatestForProduct());
+				.and(isLatestForProduct(warehouseCode));
 	}
 
 	public static Specification<InventoryHistory> notDeleted() {
 		return (root, query, cb) -> cb.isFalse(root.get("isDeleted"));
+	}
+
+	public static Specification<InventoryHistory> productNotDeleted() {
+		return (root, query, cb) -> {
+			Join<Object, Object> productJoin = root.join("product", JoinType.INNER);
+			return cb.isFalse(productJoin.get("isDeleted"));
+		};
 	}
 
 	public static Specification<InventoryHistory> byWarehouseCode(String warehouseCode) {
@@ -50,13 +58,13 @@ public class InventoryHistorySpecifications {
 		};
 	}
 
-	public static Specification<InventoryHistory> byStatuses(List<InventoryHistoryStatus.InventoryHistoryStatusCode> statuses) {
+	public static Specification<InventoryHistory> byStatusCodes(List<String> statusCodes) {
 		return (root, query, cb) -> {
-			if (CollectionUtils.isEmpty(statuses)) {
+			if (CollectionUtils.isEmpty(statusCodes)) {
 				return cb.conjunction();
 			}
 			Join<Object, Object> statusJoin = root.join("status", JoinType.INNER);
-			return statusJoin.get("code").in(statuses);
+			return statusJoin.get("code").as(String.class).in(statusCodes);
 		};
 	}
 
@@ -71,11 +79,11 @@ public class InventoryHistorySpecifications {
 			Join<Object, Object> productJoin = root.join("product", JoinType.INNER);
 			Join<Object, Object> robotJoin = root.join("robot", JoinType.LEFT);
 
-			return cb.or(
-					cb.like(cb.lower(productJoin.get("skuCode")), likePattern),
-					cb.like(cb.lower(productJoin.get("name")), likePattern),
-					cb.like(cb.lower(robotJoin.get("code")), likePattern)
-			);
+			Predicate skuPredicate = cb.like(cb.lower(productJoin.get("skuCode")), likePattern);
+			Predicate namePredicate = cb.like(cb.lower(productJoin.get("name")), likePattern);
+			Predicate robotPredicate = cb.like(cb.lower(robotJoin.get("code")), likePattern);
+
+			return cb.or(skuPredicate, namePredicate, robotPredicate);
 		};
 	}
 
@@ -89,20 +97,39 @@ public class InventoryHistorySpecifications {
 		};
 	}
 
-	public static Specification<InventoryHistory> isLatestForProduct() {
+	public static Specification<InventoryHistory> isLatestForProduct(String warehouseCode) {
 		return (root, query, cb) -> {
 			// Подзапрос для получения ID последних записей по каждому продукту
 			Subquery<Long> subquery = query.subquery(Long.class);
 			Root<InventoryHistory> subRoot = subquery.from(InventoryHistory.class);
 
 			subquery.select(cb.max(subRoot.get("id")));
-			subquery.groupBy(subRoot.get("product").get("id"));
 			subquery.where(
-					cb.equal(subRoot.get("warehouse").get("code"), root.get("warehouse").get("code")),
+					cb.equal(subRoot.get("product").get("id"), root.get("product").get("id")),
+					cb.equal(subRoot.get("warehouse").get("code"), warehouseCode),
 					cb.isFalse(subRoot.get("isDeleted"))
 			);
 
-			return cb.in(root.get("id")).value(subquery);
+			return cb.equal(root.get("id"), subquery);
+		};
+	}
+
+	// Альтернативный вариант - по максимальному scannedAt (если предпочитаешь этот подход)
+	public static Specification<InventoryHistory> isLatestForProductByScannedAt(String warehouseCode) {
+		return (root, query, cb) -> {
+			Subquery<LocalDateTime> subquery = query.subquery(LocalDateTime.class);
+			Root<InventoryHistory> subRoot = subquery.from(InventoryHistory.class);
+
+			// Явно указываем тип для scannedAt
+			Path<LocalDateTime> scannedAtPath = subRoot.get("scannedAt");
+//			subquery.select(cb.max(scannedAtPath));
+			subquery.where(
+					cb.equal(subRoot.get("product").get("id"), root.get("product").get("id")),
+					cb.equal(subRoot.get("warehouse").get("code"), warehouseCode),
+					cb.isFalse(subRoot.get("isDeleted"))
+			);
+
+			return cb.equal(root.get("scannedAt"), subquery);
 		};
 	}
 }

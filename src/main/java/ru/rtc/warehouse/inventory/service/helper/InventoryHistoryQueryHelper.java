@@ -30,67 +30,6 @@ public class InventoryHistoryQueryHelper {
 		return executeCountQuery(notOkSpec, false);
 	}
 
-	public Double calculateAvgMinutes(Specification<InventoryHistory> spec) {
-		CriteriaBuilder cb = em.getCriteriaBuilder();
-		CriteriaQuery<Double> cq = cb.createQuery(Double.class);
-		Root<InventoryHistory> root = cq.from(InventoryHistory.class);
-
-		// Вариант 1: Используем функции БД для вычисления разницы в секундах и конвертируем в минуты
-		Expression<Number> epochDiff = cb.function(
-				"EXTRACT",
-				Number.class,
-				cb.literal("EPOCH"),
-				cb.diff(root.get("createdAt"), root.get("scannedAt"))
-		);
-
-		// Конвертируем Expression<Number> в Expression<Double> и делим на 60
-		Expression<Double> diffSeconds = epochDiff.as(Double.class);
-		Expression<Double> diffMinutes = cb.quot(diffSeconds, 60.0).as(Double.class);
-
-		cq.select(cb.avg(diffMinutes));
-
-		Predicate predicate = spec.toPredicate(root, cq, cb);
-		if (predicate != null) {
-			cq.where(predicate);
-		}
-
-		try {
-			return em.createQuery(cq).getSingleResult();
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	// Альтернативный вариант - более безопасный с точки зрения типов
-	public Double calculateAvgMinutesAlternative(Specification<InventoryHistory> spec) {
-		CriteriaBuilder cb = em.getCriteriaBuilder();
-		CriteriaQuery<Double> cq = cb.createQuery(Double.class);
-		Root<InventoryHistory> root = cq.from(InventoryHistory.class);
-
-		// Используем CriteriaBuilder для создания выражения разницы
-		// и явно приводим к double для избежания проблем с типами
-		Expression<Long> createdAt = root.get("createdAt").as(Long.class);
-		Expression<Long> scannedAt = root.get("scannedAt").as(Long.class);
-		Expression<Long> diffMillis = cb.diff(createdAt, scannedAt);
-
-		// Явно приводим к double и делим на 60000
-		Expression<Double> diffMinutes = cb.quot(diffMillis.as(Double.class), 60000.0).as(Double.class);
-
-		cq.select(cb.avg(diffMinutes));
-
-		Predicate predicate = spec.toPredicate(root, cq, cb);
-		if (predicate != null) {
-			cq.where(predicate);
-		}
-
-		try {
-			return em.createQuery(cq).getSingleResult();
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	// Самый безопасный вариант - вычисление в Java
 	public Double calculateAvgMinutesSafe(Specification<InventoryHistory> spec) {
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<InventoryHistory> cq = cb.createQuery(InventoryHistory.class);
@@ -113,6 +52,9 @@ public class InventoryHistoryQueryHelper {
 			// Вычисляем среднюю разницу в минутах в Java
 			double totalMinutes = results.stream()
 					.mapToLong(history -> {
+						if (history.getScannedAt() == null || history.getCreatedAt() == null) {
+							return 0L;
+						}
 						java.time.Duration duration = java.time.Duration.between(
 								history.getScannedAt(),
 								history.getCreatedAt()
@@ -132,7 +74,6 @@ public class InventoryHistoryQueryHelper {
 		CriteriaQuery<InventoryHistory> cq = cb.createQuery(InventoryHistory.class);
 		Root<InventoryHistory> root = cq.from(InventoryHistory.class);
 
-		// Добавляем JOIN'ы для загрузки связей
 		root.fetch("product", JoinType.LEFT);
 		root.fetch("robot", JoinType.LEFT);
 		root.fetch("location", JoinType.LEFT);

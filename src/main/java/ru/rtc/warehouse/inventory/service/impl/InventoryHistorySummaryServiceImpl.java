@@ -12,7 +12,7 @@ import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.helper.InventoryHistoryQueryHelper;
 import ru.rtc.warehouse.inventory.service.InventoryHistorySummaryService;
 import ru.rtc.warehouse.inventory.service.dto.HistorySummaryDTO;
-import ru.rtc.warehouse.inventory.spec.InventoryHistorySpecifications;
+import ru.rtc.warehouse.inventory.spec.InventoryHistorySearchSpecifications;
 import ru.rtc.warehouse.inventory.util.QuickRangeResolver;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
@@ -38,8 +38,8 @@ public class InventoryHistorySummaryServiceImpl implements InventoryHistorySumma
         // Валидация и обработка параметров периода
         validateAndProcessDateParameters(request);
 
-        // Единая спецификация для всех запросов
-        Specification<InventoryHistory> spec = InventoryHistorySpecifications.build(warehouseId, request);
+        // Единая спецификация для всех запросов - используем SearchSpecifications для обычного поиска
+        Specification<InventoryHistory> spec = InventoryHistorySearchSpecifications.build(warehouseId, request);
 
         // Выполняем все запросы через helper
         long total = queryHelper.count(spec);

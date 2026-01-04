@@ -15,7 +15,7 @@ import ru.rtc.warehouse.inventory.service.helper.InventoryHistoryQueryHelper;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryQueryService;
 import ru.rtc.warehouse.inventory.service.dto.HistoryPageDTO;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
-import ru.rtc.warehouse.inventory.spec.InventoryHistorySpecifications;
+import ru.rtc.warehouse.inventory.spec.InventoryHistorySearchSpecifications;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 import java.util.List;
@@ -25,77 +25,65 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InventoryHistoryQueryServiceImpl implements InventoryHistoryQueryService {
 
-    private final IHWarehouseEntServiceAdapter warehouseService;
-    private final InventoryHistoryQueryHelper queryHelper;
-    private final InventoryHistoryMapper mapper;
+	private final IHWarehouseEntServiceAdapter warehouseService;
+	private final InventoryHistoryQueryHelper queryHelper;
+	private final InventoryHistoryMapper mapper;
 
-    @Override
-    @Transactional(readOnly = true)
-    public HistoryPageDTO search(String warehouseCode, InventoryHistorySearchRequest request, Pageable pageable) {
-        // Валидация склада
-        Warehouse warehouse = warehouseService.validateAndGetWarehouse(warehouseCode);
+	@Override
+	@Transactional(readOnly = true)
+	public HistoryPageDTO search(String warehouseCode, InventoryHistorySearchRequest request, Pageable pageable) {
+		Warehouse warehouse = warehouseService.validateAndGetWarehouse(warehouseCode);
+		Pageable safePageable = createSafePageable(pageable);
 
-        // Создаем безопасный Pageable с правильными путями для сортировки
-        Pageable safePageable = createSafePageable(pageable);
+		Specification<InventoryHistory> spec = InventoryHistorySearchSpecifications.build(warehouse.getId(), request);
 
-        // Построение спецификации
-        Specification<InventoryHistory> spec = InventoryHistorySpecifications.build(warehouse.getId(), request);
+		long total = queryHelper.count(spec);
+		List<InventoryHistory> content = queryHelper.findAll(spec);
+		List<InventoryHistory> paginatedContent = applyPagination(content, safePageable);
+		List<InventoryHistoryDTO> dtoContent = mapper.toDtoList(paginatedContent);
 
-        // Получаем общее количество для пагинации
-        long total = queryHelper.count(spec);
+		return HistoryPageDTO.builder()
+				.total(total)
+				.page(safePageable.getPageNumber())
+				.size(safePageable.getPageSize())
+				.items(dtoContent)
+				.build();
+	}
 
-        // Получаем данные с пагинацией
-        List<InventoryHistory> content = queryHelper.findAll(spec);
+	private Pageable createSafePageable(Pageable pageable) {
+		if (pageable.getSort().isUnsorted()) {
+			return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+					Sort.by(Sort.Direction.DESC, "scannedAt"));
+		}
 
-        // Применяем пагинацию вручную (так как мы уже загрузили все данные)
-        List<InventoryHistory> paginatedContent = applyPagination(content, safePageable);
+		List<Sort.Order> orders = pageable.getSort().stream()
+				.map(order -> new Sort.Order(order.getDirection(), convertSortProperty(order.getProperty())))
+				.collect(Collectors.toList());
 
-        // Маппим в DTO
-        List<InventoryHistoryDTO> dtoContent = mapper.toDtoList(paginatedContent);
+		return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
+	}
 
-        return HistoryPageDTO.builder()
-                .total(total)
-                .page(safePageable.getPageNumber())
-                .size(safePageable.getPageSize())
-                .items(dtoContent)
-                .build();
-    }
-
-    private Pageable createSafePageable(Pageable pageable) {
-        if (pageable.getSort().isUnsorted()) {
-            return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                    Sort.by(Sort.Direction.DESC, "scannedAt"));
-        }
-
-        // Преобразуем сортировку к правильным путям сущности
-        List<Sort.Order> orders = pageable.getSort().stream()
-                .map(order -> new Sort.Order(order.getDirection(), convertSortProperty(order.getProperty())))
-                .collect(Collectors.toList());
-
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
-    }
-
-    private String convertSortProperty(String property) {
+	private String convertSortProperty(String property) {
 		return switch (property) {
 			case "zone" -> "location.zone";
 			case "rowNumber" -> "location.rowNumber";
 			case "shelfNumber" -> "location.shelfNumber";
 			case "status" -> "status.code";
 			case "robotCode" -> "robot.code";
-			case "skuCode" -> "product.code";
+			case "skuCode" -> "product.skuCode";
 			case "productName" -> "product.name";
-			default -> property; // scannedAt, quantity и другие прямые поля
+			default -> property;
 		};
-    }
+	}
 
-    private List<InventoryHistory> applyPagination(List<InventoryHistory> content, Pageable pageable) {
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), content.size());
+	private List<InventoryHistory> applyPagination(List<InventoryHistory> content, Pageable pageable) {
+		int start = (int) pageable.getOffset();
+		int end = Math.min((start + pageable.getPageSize()), content.size());
 
-        if (start > content.size()) {
-            return List.of();
-        }
+		if (start > content.size()) {
+			return List.of();
+		}
 
-        return content.subList(start, end);
-    }
+		return content.subList(start, end);
+	}
 }

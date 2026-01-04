@@ -69,5 +69,4 @@ public class InventoryHistoryQueryController {
             @PathVariable String warehouseCode) {
         return ResponseEntity.ok(ihs.findLowStockProducts(warehouseCode));
     }
-
 }

@@ -11,6 +11,8 @@ import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,15 +24,24 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 
 	@Override
 	public List<InventoryCsvDto> parseCsvFile(MultipartFile file) {
-		try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+		try (Reader reader = new BufferedReader(
+				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 
-			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy = getInventoryCsvDtoHeaderColumnNameTranslateMappingStrategy();
+			// Читаем всё и убираем BOM
+			String content = new BufferedReader(reader)
+					.lines()
+					.map(line -> line.replace("\uFEFF", ""))
+					.collect(Collectors.joining("\n"));
 
-			List<InventoryCsvDto> result = new CsvToBeanBuilder<InventoryCsvDto>(reader)
+			Reader cleanReader = new StringReader(content);
+
+			HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
+					getInventoryCsvDtoHeaderColumnNameTranslateMappingStrategy();
+
+			List<InventoryCsvDto> result = new CsvToBeanBuilder<InventoryCsvDto>(cleanReader)
 					.withMappingStrategy(strategy)
 					.withIgnoreLeadingWhiteSpace(true)
 					.withSeparator(';')
-					.withSkipLines(0)
 					.build()
 					.parse();
 
@@ -43,6 +54,35 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 			throw new RuntimeException("Failed to process CSV file: " + e.getMessage(), e);
 		}
 	}
+
+	private InventoryCsvDto parseLocationFromCsv(InventoryCsvDto dto) {
+		String location = dto.getLocation();
+		if (location != null && !location.isEmpty()) {
+			try {
+				// Очистим невидимые BOM и управляющие символы
+				location = location.replace("\uFEFF", "").trim();
+
+				// Разделим по любому дефису
+				String[] parts = location.split("\\s*[\\-–—-]\\s*");
+
+				if (parts.length == 3) {
+					dto.setZone(Integer.parseInt(parts[0].trim()));
+					dto.setRow(Integer.parseInt(parts[1].trim()));
+					dto.setShelf(Integer.parseInt(parts[2].trim()));
+				} else {
+					log.warn("Неверный формат локации: '{}'", location);
+					throw new IllegalArgumentException("Invalid location format: " + location);
+				}
+
+			} catch (NumberFormatException e) {
+				log.warn("Ошибка парсинга локации: '{}'", location, e);
+				throw new IllegalArgumentException("Failed to parse location: " + location);
+			}
+		}
+		return dto;
+	}
+
+
 
 	private HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> getInventoryCsvDtoHeaderColumnNameTranslateMappingStrategy() {
 		HeaderColumnNameTranslateMappingStrategy<InventoryCsvDto> strategy =
@@ -60,24 +100,4 @@ public class CsvProcessingServiceImpl implements CsvProcessingService {
 		return strategy;
 	}
 
-	private InventoryCsvDto parseLocationFromCsv(InventoryCsvDto dto) {
-		String location = dto.getLocation();
-		if (location != null && !location.isEmpty()) {
-			try {
-				String[] parts = location.split("-");
-				if (parts.length == 3) {
-					dto.setZone(Integer.parseInt(parts[0].trim()));
-					dto.setRow(Integer.parseInt(parts[1].trim()));
-					dto.setShelf(Integer.parseInt(parts[2].trim()));
-				} else {
-					log.warn("Неверный формат локации: {}, ожидается: зона-ряд-полка", location);
-					throw new IllegalArgumentException("Invalid location format: " + location);
-				}
-			} catch (NumberFormatException e) {
-				log.warn("Ошибка парсинга локации: {}", location, e);
-				throw new IllegalArgumentException("Failed to parse location: " + location);
-			}
-		}
-		return dto;
-	}
 }
