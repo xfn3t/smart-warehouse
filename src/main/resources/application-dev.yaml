@@ -1,20 +1,27 @@
 spring:
-  main:
-    lazy-initialization: true   # быстрее старт в dev
-  devtools:
-    restart:
-      enabled: true
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+      hibernate.highlight_sql: true
 
 springdoc:
   swagger-ui:
-    persistAuthorization: true  # токен в Swagger сохраняется между перезапусками
+    persistAuthorization: true
     tryItOutEnabled: true
     displayRequestDuration: true
     docExpansion: none
 
-# секция, которую ждёт JwtUtil
 security:
   jwt:
-    # читаем из переменной окружения, а если её нет — берём безопасный дефолт
-    secret: ${JWT_SECRET:ZGV2LXNlY3JldC1jaGFuZ2UtbWUtYWRhZGEhITpBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQQ==}
-    access-ttl: PT24H
+    secret: ${JWT_SECRET}
+
+logging:
+  level:
+    ru.rtc.warehouse: debug
+    org.springframework.web: info
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace

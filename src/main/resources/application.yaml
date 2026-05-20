@@ -8,22 +8,12 @@ spring:
       max-request-size: 10MB
       file-size-threshold: 2KB
       location: ${java.io.tmpdir}
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/smart_warehouse}
-    username: ${SPRING_DATASOURCE_USERNAME:warehouse_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:warehouse_pass}
   profiles:
-    default: dev
+    default: local
   jpa:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-  redis:
-    host: ${SPRING_REDIS_HOST:localhost}
-    port: ${SPRING_REDIS_PORT:6379}
-    lettuce:
-      pool:
-        enabled: true
   liquibase:
     change-log: classpath:db/changelog/master-changelog-v1.2.5.yaml
     enabled: true
@@ -38,7 +28,6 @@ ml:
 
 security:
   jwt:
-    secret: ${JWT_SECRET}
     access-token-exp-seconds: 86400000
     refresh-token-exp-seconds: 1209600
 
@@ -65,75 +54,3 @@ warehouse:
     heartbeat-millis: 600000
     recent-threshold-minutes: 15
     medium-threshold-minutes: 120
-
----
-# Профиль dev
-spring:
-  config:
-    activate:
-      on-profile: dev
-  main:
-    lazy-initialization: true
-  devtools:
-    restart:
-      enabled: true
-  output:
-    ansi:
-      enabled: ALWAYS
-  jpa:
-    show-sql: false
-    properties:
-      hibernate.format_sql: true
-      hibernate.highlight_sql: true
-
-springdoc:
-  swagger-ui:
-    persistAuthorization: true
-    tryItOutEnabled: true
-    displayRequestDuration: true
-    docExpansion: none
-
-security:
-  jwt:
-    secret: ${JWT_SECRET:ZGV2LXNlY3JldC1jaGFuZ2UtbWUtYWRhZGEhITpBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQQ==}
-
----
-# Профиль test
-spring:
-  config:
-    activate:
-      on-profile: test
-  datasource:
-    url: jdbc:postgresql://localhost:54329/smart_warehouse_test
-    username: wh
-    password: whpwd
-  output:
-    ansi:
-      enabled: ALWAYS
-  jpa:
-    show-sql: false
-    properties:
-      hibernate.format_sql: true
-      hibernate.highlight_sql: true
-    hibernate:
-      ddl-auto: none
-  flyway:
-    enabled: true
-  test:
-    database:
-      replace: none
-
-security:
-  jwt:
-    secret: ${JWT_SECRET:0b348a2ef3a6e14c893e99d430af74b9e4cf7a58bdf13dfe9a48d64f3db2f0e2}
-    access-token-exp-seconds: 86400000
-    refresh-token-exp-seconds: 1209600
-
-logging:
-  level:
-    root: warn
-    ru.rtc.warehouse: info
-    org.springframework.web: warn
-    org.springframework.web.servlet.mvc.method.annotation: warn
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace

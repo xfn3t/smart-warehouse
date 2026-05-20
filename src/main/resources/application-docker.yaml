@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/smart_warehouse
+    username: ${POSTGRES_USER:warehouse_user}
+    password: ${POSTGRES_PASSWORD:warehouse_pass}
+  redis:
+    host: redis
+    port: 6379
+  devtools:
+    restart:
+      enabled: false
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}

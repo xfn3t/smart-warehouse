@@ -35,3 +35,5 @@ build/
 .vscode/
 
 /robot_emulator/test
+.env
+.zed
