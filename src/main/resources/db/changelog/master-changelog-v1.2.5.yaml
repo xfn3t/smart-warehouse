@@ -3,7 +3,6 @@ databaseChangeLog:
       file: v1.1/enable-pgcrypto-extension-changelog.yaml
       relativeToChangelogFile: true
 
-
   - include:
       file: v1.1/roles-changelog.yaml
       relativeToChangelogFile: true
@@ -54,7 +53,6 @@ databaseChangeLog:
       file: v1.1/error-logs-changelog.yaml
       relativeToChangelogFile: true
 
-
   - include:
       file: v1.2.5/fix-constraints-changelog.yaml
       relativeToChangelogFile: true
@@ -63,4 +61,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: v1.2.5/product-warehouse-changelog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.2/add-excluded-cells-to-warehouses.yaml
       relativeToChangelogFile: true

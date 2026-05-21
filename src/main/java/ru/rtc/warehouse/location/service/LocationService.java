@@ -1,10 +1,13 @@
 package ru.rtc.warehouse.location.service;
 
+import java.util.List;
 import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
-import java.util.List;
-
 public interface LocationService {
-	List<Location> generateLocationsForWarehouse(Warehouse warehouse);
+    List<Location> generateLocationsForWarehouse(
+        Warehouse warehouse,
+        List<ExcludedCellDTO> excludedCells
+    );
 }
