@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.location.model.Location;
+import ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseUpdateRequest;
 import ru.rtc.warehouse.warehouse.mapper.WarehouseMapper;
@@ -36,9 +37,8 @@ public class WarehouseServiceImpl implements WarehouseService {
 		Warehouse savedWarehouse = warehouseEntityService.save(warehouse);
 
 		savedWarehouse.setLocations(new HashSet<>(
-				locationServiceAdapter.generateLocationForWarehouse(savedWarehouse)
+				locationServiceAdapter.generateLocationForWarehouse(savedWarehouse, createRequest.getExcludedCells())
 		));
-
 
 		warehouseEntityService.save(savedWarehouse);
 	}
@@ -58,6 +58,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 	public void update(WarehouseUpdateRequest updateRequest, Warehouse warehouse) {
 
 		boolean dimensionsChanged = false;
+		boolean exclusionsChanged = false;
 
 		if (updateRequest.getCode() != null) {
 			warehouse.setCode(updateRequest.getCode());
@@ -81,9 +82,15 @@ public class WarehouseServiceImpl implements WarehouseService {
 			warehouse.setWarehouseLocation(updateRequest.getLocation());
 		}
 
-		// Если изменились размеры склада, перегенерируем локации
-		if (dimensionsChanged) {
-			List<Location> updatedLocations = locationServiceAdapter.generateLocationForWarehouse(warehouse);
+		// excludedCells is a replace-or-clear semantic: if null, keep current; if non-null, replace
+		List<ExcludedCellDTO> newExclusions = updateRequest.getExcludedCells();
+		if (newExclusions != null) {
+			exclusionsChanged = true;
+		}
+
+		// Regenerate locations if dimensions or exclusions changed
+		if (dimensionsChanged || exclusionsChanged) {
+			List<Location> updatedLocations = locationServiceAdapter.generateLocationForWarehouse(warehouse, newExclusions);
 			warehouse.setLocations(new HashSet<>(updatedLocations));
 		}
 
@@ -92,17 +99,17 @@ public class WarehouseServiceImpl implements WarehouseService {
 
 	@Override
 	public List<WarehouseDTO> findAll() {
-		return warehouseMapper.toDtoList(warehouseEntityService.findAll());
+		return enrichWithExclusions(warehouseMapper.toDtoList(warehouseEntityService.findAll()));
 	}
 
 	@Override
 	public WarehouseDTO findById(Long id) {
-		return warehouseMapper.toDto(warehouseEntityService.findById(id));
+		return enrichWithExclusions(warehouseMapper.toDto(warehouseEntityService.findById(id)));
 	}
 
 	@Override
 	public WarehouseDTO findByCode(String code) {
-		return warehouseMapper.toDto(warehouseEntityService.findByCode(code));
+		return enrichWithExclusions(warehouseMapper.toDto(warehouseEntityService.findByCode(code)));
 	}
 
 	@Override
@@ -117,6 +124,38 @@ public class WarehouseServiceImpl implements WarehouseService {
 
 	@Override
 	public List<WarehouseDTO> findByUserId(Long userId) {
-		return warehouseMapper.toDtoList(warehouseEntityService.findByUserId(userId));
+		return enrichWithExclusions(warehouseMapper.toDtoList(warehouseEntityService.findByUserId(userId)));
+	}
+
+	/**
+	 * Compute excludedCells for each DTO: all (zone,row) from 1..max that have zero locations in DB.
+	 */
+	private List<WarehouseDTO> enrichWithExclusions(List<WarehouseDTO> dtos) {
+		for (WarehouseDTO dto : dtos) {
+			enrichWithExclusions(dto);
+		}
+		return dtos;
+	}
+
+	private WarehouseDTO enrichWithExclusions(WarehouseDTO dto) {
+		if (dto == null || dto.getId() == null) return dto;
+		Warehouse wh = warehouseEntityService.findById(dto.getId());
+		java.util.Set<String> existingCells = new java.util.HashSet<>();
+		for (Location loc : wh.getLocations()) {
+			existingCells.add(loc.getZone() + "-" + loc.getRow());
+		}
+		java.util.List<ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO> excluded = new java.util.ArrayList<>();
+		for (int z = 1; z <= dto.getZoneMaxSize(); z++) {
+			for (int r = 1; r <= dto.getRowMaxSize(); r++) {
+				if (!existingCells.contains(z + "-" + r)) {
+					ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO ec = new ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO();
+					ec.setZone(z);
+					ec.setRow(r);
+					excluded.add(ec);
+				}
+			}
+		}
+		dto.setExcludedCells(excluded);
+		return dto;
 	}
 }

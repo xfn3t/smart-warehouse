@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.Size;
 import javax.validation.constraints.Positive;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,4 +28,6 @@ public class WarehouseUpdateRequest {
 
 	@Size(max = 255, message = "Location must not exceed 255 characters")
 	private String location;
+
+	private List<ExcludedCellDTO> excludedCells;
 }

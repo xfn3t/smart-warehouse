@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.Setter;
+import ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,4 +22,5 @@ public class WarehouseDTO {
 	private Integer rowMaxSize;
 	private Integer shelfMaxSize;
 	private String location;
+	private List<ExcludedCellDTO> excludedCells; // исключенные секций 
 }

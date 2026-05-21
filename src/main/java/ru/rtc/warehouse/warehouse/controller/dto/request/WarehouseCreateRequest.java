@@ -7,6 +7,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.validation.constraints.Positive;
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,4 +35,7 @@ public class WarehouseCreateRequest {
 
 	@Size(max = 255, message = "Location must not exceed 255 characters")
 	private String location;
+
+	/** Optional: (zone,row) cells to exclude from the generated matrix. Shelf is always full 1..shelfMaxSize. */
+	private List<ExcludedCellDTO> excludedCells;
 }
