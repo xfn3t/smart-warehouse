@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.user.controller.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,8 +9,12 @@ import lombok.Setter;
 @Setter
 @Builder
 public class UserCreateRequest {
-	private String email;
-	private String password;
-	private String name;
-	private String role;
+
+    private String email;
+    private String password;
+
+    @JsonAlias({ "firstName", "fullName" })
+    private String name;
+
+    private String role;
 }

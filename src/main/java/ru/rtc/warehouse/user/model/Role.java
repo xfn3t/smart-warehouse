@@ -13,33 +13,34 @@ import lombok.*;
 @Builder
 public class Role {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Enumerated(EnumType.STRING)
-	@Column(length = 50, nullable = false, unique = true)
-	private RoleCode code;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50, nullable = false, unique = true)
+    private RoleCode code;
 
-	@Builder.Default
-	@Column(name = "is_deleted", nullable = false)
-	private boolean isDeleted = false;
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 
-	public enum RoleCode {
-		VIEWER,
-		ADMIN,
-		MANAGER,
-		OPERATOR,
-		ROBOT;
+    public enum RoleCode {
+        VIEWER,
+        ADMIN,
+        MANAGER,
+        OPERATOR,
+        WAREHOUSE_WORKER,
+        ROBOT;
 
-		@JsonCreator
-		public static RoleCode from(String value) {
-			if (value == null) return null;
-			try {
-				return RoleCode.valueOf(value.trim().toUpperCase());
-			} catch (IllegalArgumentException ex) {
-				throw new IllegalArgumentException("Unknown status: " + value);
-			}
-		}
-	}
+        @JsonCreator
+        public static RoleCode from(String value) {
+            if (value == null) return null;
+            try {
+                return RoleCode.valueOf(value.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Unknown status: " + value);
+            }
+        }
+    }
 }

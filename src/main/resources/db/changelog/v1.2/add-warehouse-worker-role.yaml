@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-warehouse-worker-role
+      author: dev
+      preConditions:
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM roles WHERE code = 'WAREHOUSE_WORKER'
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: code
+                  value: WAREHOUSE_WORKER

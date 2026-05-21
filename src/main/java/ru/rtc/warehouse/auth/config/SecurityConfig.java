@@ -1,8 +1,10 @@
 package ru.rtc.warehouse.auth.config;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -22,68 +24,120 @@ import ru.rtc.warehouse.auth.util.JwtAuthenticationFilter;
 import ru.rtc.warehouse.auth.util.JwtUtil;
 import ru.rtc.warehouse.auth.util.RobotTokenAuthenticationFilter;
 
-import java.util.List;
-
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-	private final JwtUtil jwtUtil;
-	private final UserDetailsServiceImpl customUserDetailsService;
-	private final RobotTokenRepository robotTokenRepository;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsServiceImpl customUserDetailsService;
+    private final RobotTokenRepository robotTokenRepository;
 
-	@Bean
-	public JwtAuthenticationFilter jwtAuthenticationFilter() {
-		return new JwtAuthenticationFilter(jwtUtil, customUserDetailsService);
-	}
-	@Bean
-    public RobotTokenAuthenticationFilter robotTokenAuthenticationFilter() {
-        return new RobotTokenAuthenticationFilter(jwtUtil, robotTokenRepository);
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtUtil, customUserDetailsService);
     }
 
-	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-		return authenticationConfiguration.getAuthenticationManager();
-	}
+    @Bean
+    public RobotTokenAuthenticationFilter robotTokenAuthenticationFilter() {
+        return new RobotTokenAuthenticationFilter(
+            jwtUtil,
+            robotTokenRepository
+        );
+    }
 
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder(11);
-	}
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration authenticationConfiguration
+    ) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
 
-	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(List.of("*"));
-		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-		configuration.setAllowedHeaders(List.of("*"));
-		configuration.setAllowCredentials(true);
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(11);
+    }
 
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-		return source;
-	}
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        );
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
 
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
-	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http
-				.csrf(AbstractHttpConfigurer::disable)
-				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/v3/api-docs/**").permitAll()
-						.requestMatchers("/swagger-ui/**").permitAll()
-						.requestMatchers("/v3/swagger-ui/**").permitAll()
-						.requestMatchers("/api/auth/**").permitAll()
-						.requestMatchers("/ws", "/ws/**", "/api/ws/dashboard", "/api/ws/dashboard/**", "/ws/info/**").permitAll()
-						.anyRequest().authenticated()
-				)
-				.userDetailsService(customUserDetailsService);
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(sm ->
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authorizeHttpRequests(auth ->
+                auth
+                    .requestMatchers("/v3/api-docs/**")
+                    .permitAll()
+                    .requestMatchers("/swagger-ui/**")
+                    .permitAll()
+                    .requestMatchers("/v3/swagger-ui/**")
+                    .permitAll()
+                    .requestMatchers("/api/auth/**")
+                    .permitAll()
+                    .requestMatchers(
+                        "/ws",
+                        "/ws/**",
+                        "/api/ws/dashboard",
+                        "/api/ws/dashboard/**",
+                        "/ws/info/**"
+                    )
+                    .permitAll()
+                    // ADMIN only: warehouse management
+                    .requestMatchers(HttpMethod.POST, "/api/warehouse")
+                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/warehouse/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/warehouse/**")
+                    .hasRole("ADMIN")
+                    // ADMIN only: robot management
+                    .requestMatchers(HttpMethod.POST, "/api/robots/register")
+                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/robots/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/robots/**")
+                    .hasRole("ADMIN")
+                    // ADMIN only: user creation
+                    .requestMatchers(HttpMethod.POST, "/api/*/users/register")
+                    .hasRole("ADMIN")
+                    // WAREHOUSE_WORKER + ADMIN: inventory import
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/*/inventory/import/**"
+                    )
+                    .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
+                    // WAREHOUSE_WORKER + ADMIN: all GET endpoints
+                    .requestMatchers(HttpMethod.GET, "/api/**")
+                    .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
+                    .anyRequest()
+                    .authenticated()
+            )
+            .userDetailsService(customUserDetailsService);
 
-		http.addFilterBefore(robotTokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-		http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-		return http.build();
-	}
+        http.addFilterBefore(
+            robotTokenAuthenticationFilter(),
+            UsernamePasswordAuthenticationFilter.class
+        );
+        http.addFilterBefore(
+            jwtAuthenticationFilter(),
+            UsernamePasswordAuthenticationFilter.class
+        );
+        return http.build();
+    }
 }

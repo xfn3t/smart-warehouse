@@ -1,6 +1,7 @@
 package ru.rtc.warehouse.user.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.rtc.warehouse.exception.AlreadyExistsException;
 import ru.rtc.warehouse.user.controller.dto.request.UserCreateRequest;
@@ -17,29 +18,37 @@ import ru.rtc.warehouse.user.service.dto.UserDTO;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-	private final UserEntityService userEntityService;
-	private final RoleService roleService;
-	private final UserMapper userMapper;
+    private final UserEntityService userEntityService;
+    private final RoleService roleService;
+    private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
-	public UserDTO save(UserCreateRequest request) {
-		User user = userMapper.toEntity(request);
+    public UserDTO save(UserCreateRequest request) {
+        User user = userMapper.toEntity(request);
 
-		if (userEntityService.existByEmail(user.getEmail())) {
-			throw new AlreadyExistsException("User already exists");
-		}
+        if (
+            request.getPassword() != null &&
+            !request.getPassword().startsWith("$2")
+        ) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
 
-		// Обрабатываем оба случая: с ролью и без
-		Role role;
-		if (request.getRole() != null) {
-			// Ищем переданную роль в базе данных
-			role = roleService.findByCode(RoleCode.from(request.getRole()));
-		} else {
-			// Роль по умолчанию
-			role = roleService.findByCode(RoleCode.VIEWER);
-		}
+        if (userEntityService.existByEmail(user.getEmail())) {
+            throw new AlreadyExistsException("User already exists");
+        }
 
-		user.setRole(role); // Устанавливаем найденную роль из БД
+        // Обрабатываем оба случая: с ролью и без
+        Role role;
+        if (request.getRole() != null) {
+            // Ищем переданную роль в базе данных
+            role = roleService.findByCode(RoleCode.from(request.getRole()));
+        } else {
+            // Роль по умолчанию
+            role = roleService.findByCode(RoleCode.VIEWER);
+        }
 
-		return userMapper.toDto(userEntityService.saveUser(user));
-	}
+        user.setRole(role); // Устанавливаем найденную роль из БД
+
+        return userMapper.toDto(userEntityService.saveUser(user));
+    }
 }

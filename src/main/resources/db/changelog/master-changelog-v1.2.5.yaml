@@ -65,3 +65,6 @@ databaseChangeLog:
   - include:
       file: v1.2/add-excluded-cells-to-warehouses.yaml
       relativeToChangelogFile: true
+  - include:
+      file: v1.2/add-warehouse-worker-role.yaml
+      relativeToChangelogFile: true

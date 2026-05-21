@@ -78,23 +78,6 @@ public class LocationServiceImpl implements LocationService {
             }
         }
 
-        List<Location> saved = locationEntityService.saveAll(locations);
-
-        // Remove orphan locations (no longer in the generated set) that have no FK references
-        Set<Long> savedIds = saved
-            .stream()
-            .map(Location::getId)
-            .collect(Collectors.toSet());
-        for (Location existing : existingLocations) {
-            if (!savedIds.contains(existing.getId())) {
-                try {
-                    locationEntityService.delete(existing.getId());
-                } catch (Exception ignored) {
-                    // FK constraint — location has inventory history, keep it
-                }
-            }
-        }
-
-        return saved;
+        return locationEntityService.saveAll(locations);
     }
 }
