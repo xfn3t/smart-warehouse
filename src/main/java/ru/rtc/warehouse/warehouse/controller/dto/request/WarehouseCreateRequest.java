@@ -35,5 +35,6 @@ public class WarehouseCreateRequest {
     @Size(max = 255, message = "Location must not exceed 255 characters")
     private String location;
 
+    /** Optional: (zone,row) cells to exclude. Shelf is always full 1..shelfMaxSize. */
     private List<ExcludedCellDTO> excludedCells;
 }

@@ -1,18 +1,10 @@
 package ru.rtc.warehouse.warehouse.service.impl;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
 import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
@@ -171,7 +163,6 @@ public class WarehouseServiceImpl implements WarehouseService {
             warehouseEntityService.findByUserId(id)
         );
     }
-
 
     /** Convert List<ExcludedCellDTO> to Map<String,Object> for JSONB storage as {"cells": [...]} */
     private Map<String, Object> cellsToMap(List<ExcludedCellDTO> cells) {

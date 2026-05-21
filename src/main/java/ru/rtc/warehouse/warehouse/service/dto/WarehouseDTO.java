@@ -22,5 +22,6 @@ public class WarehouseDTO {
     private Integer rowMaxSize;
     private Integer shelfMaxSize;
     private String location;
+    /** Excluded (zone,row) cells — read from JSONB column. */
     private List<ExcludedCellDTO> excludedCells;
 }

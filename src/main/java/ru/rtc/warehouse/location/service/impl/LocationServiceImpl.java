@@ -3,6 +3,7 @@ package ru.rtc.warehouse.location.service.impl;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.location.model.Location;
@@ -15,6 +16,7 @@ import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LocationServiceImpl implements LocationService {
 
     private final LocationEntityService locationEntityService;

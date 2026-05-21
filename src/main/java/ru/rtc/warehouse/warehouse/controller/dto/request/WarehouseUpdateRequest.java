@@ -28,5 +28,6 @@ public class WarehouseUpdateRequest {
     @Size(max = 255, message = "Location must not exceed 255 characters")
     private String location;
 
+    /** Optional: null = keep, [] = clear all, non-empty = replace. */
     private List<ExcludedCellDTO> excludedCells;
 }
