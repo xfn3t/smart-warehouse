@@ -5,6 +5,7 @@ import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryUpdateR
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryDTO;
 import ru.rtc.warehouse.inventory.service.dto.InventoryHistoryGroupedDTO;
+import ru.rtc.warehouse.inventory.service.dto.InventoryHistorySmoothedDTO;
 import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
 
 import java.time.LocalDateTime;
@@ -26,4 +27,7 @@ public interface InventoryHistoryService {
 	List<InventoryHistoryGroupedDTO> findAllByWarehouseCodeAndProductCodes(String warehouseCode, List<String> productCodes);
 
 	List<LowStockProductDTO> findLowStockProducts(String warehouseCode);
+
+	List<InventoryHistorySmoothedDTO> findSmoothed(String warehouseCode, List<String> productCodes,
+												   String period, String from, String to);
 }

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-product-image-description
+      author: dev
+      preConditions:
+        - not:
+            columnExists:
+              tableName: products
+              columnName: image_url
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: image_url
+                  type: VARCHAR(500)
+              - column:
+                  name: description
+                  type: TEXT

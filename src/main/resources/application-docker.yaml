@@ -1,0 +1,50 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  redis:
+    host: ${SPRING_REDIS_HOST}
+    port: ${SPRING_REDIS_PORT}
+  main:
+    lazy-initialization: false
+  output:
+    ansi:
+      enabled: ALWAYS
+  jpa:
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+      hibernate.highlight_sql: true
+
+ml:
+  api:
+    url: ${ML_API_URL}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+
+s3:
+  endpoint: http://minio:9000
+  access-key: ${MINIO_USER}
+  secret-key: ${MINIO_PASSWORD}
+  bucket: warehouse-images
+  region: us-east-1
+
+springdoc:
+  swagger-ui:
+    persistAuthorization: true
+    tryItOutEnabled: true
+    displayRequestDuration: true
+    docExpansion: none
+
+logging:
+  level:
+    ru.rtc.warehouse: debug
+    org.springframework.web: info
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace

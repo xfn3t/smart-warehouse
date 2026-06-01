@@ -91,6 +91,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/auth/**")
                     .permitAll()
+                    .requestMatchers("/api/images/**")
+                    .permitAll()
                     .requestMatchers(
                         "/ws",
                         "/ws/**",

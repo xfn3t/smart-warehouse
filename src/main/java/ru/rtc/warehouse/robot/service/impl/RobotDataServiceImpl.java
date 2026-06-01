@@ -164,7 +164,7 @@ public class RobotDataServiceImpl implements RobotDataService {
             scanMap.put("productCode", productCode);
             scanMap.put("productName", productName);
             scanMap.put("quantity", quantity);
-            scanMap.put("status", status);
+            scanMap.put("status", status != null ? status.getCode() != null ? status.getCode().name() : null : null);
             scanMap.put("diff", diff);
             scanMap.put("scannedAt", scannedAt.toString());
             recentScansPayload.add(scanMap);

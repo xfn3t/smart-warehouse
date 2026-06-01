@@ -1,11 +1,10 @@
 package ru.rtc.warehouse.product.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-import ru.rtc.warehouse.inventory.model.InventoryHistory;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.*;
+import ru.rtc.warehouse.inventory.model.InventoryHistory;
 
 @Entity
 @Table(name = "products")
@@ -15,25 +14,36 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Product {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
 
-	@Column(name = "sku_code", unique = true, nullable = false)
-	private String skuCode;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(name = "name", nullable = false)
-	private String name;
+    @Column(name = "sku_code", unique = true, nullable = false)
+    private String skuCode;
 
-	@Column(name = "category")
-	private String category;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-	@Column(name = "is_deleted")
-	private Boolean isDeleted = false;
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
-	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<ProductWarehouse> warehouseParameters = new ArrayList<>();
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
-	@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-	private List<InventoryHistory> inventoryHistory = new ArrayList<>();
+    @Column(name = "category")
+    private String category;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @OneToMany(
+        mappedBy = "product",
+        cascade = CascadeType.ALL,
+        fetch = FetchType.LAZY
+    )
+    private List<ProductWarehouse> warehouseParameters = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<InventoryHistory> inventoryHistory = new ArrayList<>();
 }

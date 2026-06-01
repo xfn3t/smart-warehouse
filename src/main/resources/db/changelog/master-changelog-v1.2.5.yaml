@@ -68,3 +68,6 @@ databaseChangeLog:
   - include:
       file: v1.2/add-warehouse-worker-role.yaml
       relativeToChangelogFile: true
+  - include:
+      file: v1.2/add-product-image-description.yaml
+      relativeToChangelogFile: true

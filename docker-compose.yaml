@@ -1,11 +1,8 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15
     container_name: postgres-warehouse
     restart: always
-    env_file: .env.dev
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -35,14 +32,15 @@ services:
     build: .
     container_name: ${APP_NAME:-warehouse-app}
     restart: always
-    env_file: .env.dev
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      minio:
+        condition: service_started
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-dev}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-docker}
 
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -54,6 +52,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-secret-key}
 
       ML_API_URL: http://ai-service:8001
+      MINIO_USER: ${MINIO_USER:-minioadmin}
+      MINIO_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
     ports:
       - "${APP_PORT:-8080}:8080"
     networks:
@@ -67,7 +67,6 @@ services:
     restart: always
     ports:
       - "8001:8001"
-    env_file: .env.dev
     depends_on:
       - postgres
       - redis
@@ -79,7 +78,6 @@ services:
       context: ./robot_emulator
       dockerfile: Dockerfile
     container_name: robot-emulator
-    env_file: .env.dev
     depends_on:
       - postgres
       - redis
@@ -102,8 +100,24 @@ services:
       - backend
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio-warehouse
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
+
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
   backend:
