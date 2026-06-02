@@ -2,12 +2,15 @@ package ru.rtc.warehouse.reports.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.reports.dto.*;
 import ru.rtc.warehouse.reports.dto.robot.RobotActivityReportDTO;
@@ -173,17 +176,13 @@ public class ReportsController {
         codeParam = "warehouseCode",
         entityType = RequiresOwnership.EntityType.WAREHOUSE
     )
-    public ResponseEntity<byte[]> downloadPdfReport(
-        @PathVariable String warehouseCode
+    public ResponseEntity<ReportResponseDTO> generatePdf(
+        @PathVariable String warehouseCode,
+        @AuthenticationPrincipal UserDetailsImpl principal
     ) {
-        byte[] pdf = reportsService.generatePdfReport(warehouseCode);
-        return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
-            .header(
-                HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"report.pdf\""
-            )
-            .body(pdf);
+        return ResponseEntity.ok(
+            reportsService.generatePdfReport(warehouseCode, principal)
+        );
     }
 
     @PostMapping("/warehouses/{warehouseCode}/pdf/by-skus")
@@ -191,19 +190,54 @@ public class ReportsController {
         codeParam = "warehouseCode",
         entityType = RequiresOwnership.EntityType.WAREHOUSE
     )
-    public ResponseEntity<byte[]> downloadPdfReportForSkus(
+    public ResponseEntity<ReportResponseDTO> generatePdfForSkus(
         @PathVariable String warehouseCode,
-        @RequestBody List<String> skuCodes
+        @RequestBody List<String> skuCodes,
+        @AuthenticationPrincipal UserDetailsImpl principal
     ) {
-        byte[] pdf = reportsService.generatePdfReportForSkus(
-            warehouseCode,
-            skuCodes
+        return ResponseEntity.ok(
+            reportsService.generatePdfReportForSkus(
+                warehouseCode,
+                skuCodes,
+                principal
+            )
         );
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<List<ReportMetadataDTO>> getUserReports(
+        @AuthenticationPrincipal UserDetailsImpl principal
+    ) {
+        return ResponseEntity.ok(
+            reportsService.getUserReports(principal.getUser().getId())
+        );
+    }
+
+    @GetMapping("/warehouses/{warehouseCode}/reports")
+    @RequiresOwnership(
+        codeParam = "warehouseCode",
+        entityType = RequiresOwnership.EntityType.WAREHOUSE
+    )
+    public ResponseEntity<List<ReportMetadataDTO>> getWarehouseReports(
+        @PathVariable String warehouseCode,
+        @AuthenticationPrincipal UserDetailsImpl principal
+    ) {
+        return ResponseEntity.ok(
+            reportsService.getReportsByWarehouse(
+                principal.getUser().getId(),
+                warehouseCode
+            )
+        );
+    }
+
+    @GetMapping("/download/{reportUid}")
+    public ResponseEntity<byte[]> downloadFromS3(@PathVariable UUID reportUid) {
+        byte[] pdf = reportsService.downloadReportFromS3(reportUid);
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_PDF)
             .header(
                 HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"skus_report.pdf\""
+                "attachment; filename=\"report.pdf\""
             )
             .body(pdf);
     }

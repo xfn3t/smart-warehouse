@@ -12,11 +12,7 @@ databaseChangeLog:
         - tableExists:
             tableName: robots
       changes:
-        # ──────────────────────────────────────────────
-        # 1. Сводка по складу: общее кол-во товаров,
-        #    уникальных SKU, суммарное расхождение,
-        #    дата последнего сканирования, кол-во роботов
-        # ──────────────────────────────────────────────
+        # Сводка по складу: общее кол-во товаров, уникальных SKU, суммарное расхождение, дата последнего сканирования, кол-во роботов
         - sql:
             sql: >
               CREATE OR REPLACE VIEW v_warehouse_summary AS
@@ -44,10 +40,7 @@ databaseChangeLog:
               WHERE w.is_deleted = false
               GROUP BY w.id, w.code, w.name;
 
-        # ──────────────────────────────────────────────
-        # 2. Отчет по роботам: активность (сканирования)
-        #    за период + статус, батарея, склад
-        # ──────────────────────────────────────────────
+        # Отчет по роботам: активность (сканирования) за период + статус, батарея, склад
         - sql:
             sql: >
               CREATE OR REPLACE VIEW v_robot_activity_report AS
@@ -83,10 +76,7 @@ databaseChangeLog:
               ) sc ON true
               WHERE r.is_deleted = false;
 
-        # ──────────────────────────────────────────────
-        # 3. Отчет по продуктам: текущее кол-во,
-        #    расхождение, мин/оптим запас, статус
-        # ──────────────────────────────────────────────
+        # Отчет по продуктам: текущее кол-во, расхождение, мин/оптим запас, статус
         - sql:
             sql: >
               CREATE OR REPLACE VIEW v_product_report AS
@@ -125,9 +115,7 @@ databaseChangeLog:
               WHERE p.is_deleted = false
                 AND w.is_deleted = false;
 
-        # ──────────────────────────────────────────────
-        # 4. Ежедневная агрегация (для графиков/трендов)
-        # ──────────────────────────────────────────────
+        # Ежедневная агрегация (для графиков/трендов)
         - sql:
             sql: >
               CREATE OR REPLACE VIEW v_daily_aggregation AS
@@ -146,9 +134,7 @@ databaseChangeLog:
               WHERE ih.is_deleted = false
               GROUP BY ih.warehouse_id, w.code, DATE(ih.scanned_at);
 
-        # ──────────────────────────────────────────────
-        # 5. Сводка по расхождениям за последние 30 дней
-        # ──────────────────────────────────────────────
+        # Сводка по расхождениям за последние 30 дней
         - sql:
             sql: >
               CREATE OR REPLACE VIEW v_discrepancy_summary AS
@@ -220,3 +206,67 @@ databaseChangeLog:
                   name: warehouse_id
               - column:
                   name: is_deleted
+
+  - changeSet:
+      id: v1.3-create-report-metadata
+      author: dev
+      preConditions:
+        - not:
+            tableExists:
+              tableName: report_metadata
+      changes:
+        - createTable:
+            tableName: report_metadata
+            remarks: "Метаданные сгенерированных отчётов"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: report_uid
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_report_metadata_user
+                    references: users(id)
+              - column:
+                  name: warehouse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_report_metadata_warehouse
+                    references: warehouses(id)
+              - column:
+                  name: s3_key
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: report_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                  remarks: "Тип отчёта: FULL_WAREHOUSE или BY_SKUS"
+              - column:
+                  name: sku_codes
+                  type: JSONB
+                  remarks: "Список SKU (для отчётов BY_SKUS)"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false

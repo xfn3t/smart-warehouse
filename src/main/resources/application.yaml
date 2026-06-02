@@ -17,12 +17,14 @@ spring:
     hibernate:
       ddl-auto: none
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate.default_batch_fetch_size: 100
   redis:
     lettuce:
       pool:
         enabled: true
   liquibase:
-    change-log: classpath:db/changelog/master-changelog-v1.2.5.yaml
+    change-log: classpath:db/changelog/master-changelog-v1.3.yaml
     enabled: true
     clear-checksums: true
 
