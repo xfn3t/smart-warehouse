@@ -71,3 +71,6 @@ databaseChangeLog:
   - include:
       file: v1.2/add-product-image-description.yaml
       relativeToChangelogFile: true
+  - include:
+      file: v1.3/report-views-changelog.yaml
+      relativeToChangelogFile: true
