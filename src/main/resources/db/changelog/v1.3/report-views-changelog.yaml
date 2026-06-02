@@ -1,0 +1,222 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.3-create-report-views
+      author: dev
+      preConditions:
+        - tableExists:
+            tableName: inventory_history
+        - tableExists:
+            tableName: products
+        - tableExists:
+            tableName: warehouses
+        - tableExists:
+            tableName: robots
+      changes:
+        # ──────────────────────────────────────────────
+        # 1. Сводка по складу: общее кол-во товаров,
+        #    уникальных SKU, суммарное расхождение,
+        #    дата последнего сканирования, кол-во роботов
+        # ──────────────────────────────────────────────
+        - sql:
+            sql: >
+              CREATE OR REPLACE VIEW v_warehouse_summary AS
+              SELECT
+                  w.id              AS warehouse_id,
+                  w.code            AS warehouse_code,
+                  w.name            AS warehouse_name,
+                  COALESCE(SUM(ih.quantity), 0)          AS total_quantity,
+                  COALESCE(COUNT(DISTINCT ih.product_id), 0) AS unique_sku_count,
+                  COALESCE(SUM(ih.difference), 0)        AS total_discrepancy,
+                  COALESCE(SUM(ABS(ih.difference)), 0)   AS total_abs_discrepancy,
+                  MAX(ih.scanned_at)                       AS last_scan_at,
+                  COALESCE(SUM(ih.quantity) FILTER (WHERE ih.status_id = (SELECT id FROM inventory_status WHERE code = 'CRITICAL')), 0) AS critical_count,
+                  COALESCE(SUM(ih.quantity) FILTER (WHERE ih.status_id = (SELECT id FROM inventory_status WHERE code = 'LOW_STOCK')), 0) AS low_stock_count
+              FROM warehouses w
+              LEFT JOIN LATERAL (
+                  SELECT DISTINCT ON (ih2.product_id)
+                      ih2.product_id, ih2.quantity, ih2.difference,
+                      ih2.scanned_at, ih2.status_id
+                  FROM inventory_history ih2
+                  WHERE ih2.warehouse_id = w.id
+                    AND ih2.is_deleted = false
+                  ORDER BY ih2.product_id, ih2.scanned_at DESC
+              ) ih ON true
+              WHERE w.is_deleted = false
+              GROUP BY w.id, w.code, w.name;
+
+        # ──────────────────────────────────────────────
+        # 2. Отчет по роботам: активность (сканирования)
+        #    за период + статус, батарея, склад
+        # ──────────────────────────────────────────────
+        - sql:
+            sql: >
+              CREATE OR REPLACE VIEW v_robot_activity_report AS
+              SELECT
+                  r.id                AS robot_id,
+                  r.robot_code        AS robot_code,
+                  w.code              AS warehouse_code,
+                  w.name              AS warehouse_name,
+                  rs.code             AS robot_status,
+                  r.battery_level     AS battery_level,
+                  r.last_update       AS last_update,
+                  COALESCE(sc.scan_count, 0)      AS total_scans,
+                  COALESCE(sc.last_scan_at, NULL) AS last_scan_at,
+                  COALESCE(sc.ok_count, 0)        AS ok_scans,
+                  COALESCE(sc.low_stock_count, 0) AS low_stock_scans,
+                  COALESCE(sc.critical_count, 0)  AS critical_scans,
+                  COALESCE(sc.total_diff, 0)      AS total_difference
+              FROM robots r
+              JOIN warehouses w     ON w.id = r.warehouse_id AND w.is_deleted = false
+              JOIN robot_status rs  ON rs.id = r.status_id
+              LEFT JOIN LATERAL (
+                  SELECT
+                      COUNT(*)                         AS scan_count,
+                      MAX(ih.scanned_at)               AS last_scan_at,
+                      COUNT(*) FILTER (WHERE ist.code = 'OK')         AS ok_count,
+                      COUNT(*) FILTER (WHERE ist.code = 'LOW_STOCK')  AS low_stock_count,
+                      COUNT(*) FILTER (WHERE ist.code = 'CRITICAL')   AS critical_count,
+                      COALESCE(SUM(ih.difference), 0)  AS total_diff
+                  FROM inventory_history ih
+                  JOIN inventory_status ist ON ist.id = ih.status_id
+                  WHERE ih.robot_id = r.id
+                    AND ih.is_deleted = false
+              ) sc ON true
+              WHERE r.is_deleted = false;
+
+        # ──────────────────────────────────────────────
+        # 3. Отчет по продуктам: текущее кол-во,
+        #    расхождение, мин/оптим запас, статус
+        # ──────────────────────────────────────────────
+        - sql:
+            sql: >
+              CREATE OR REPLACE VIEW v_product_report AS
+              SELECT
+                  p.id              AS product_id,
+                  p.sku_code        AS sku_code,
+                  p.name            AS product_name,
+                  p.category        AS category,
+                  w.code            AS warehouse_code,
+                  w.name            AS warehouse_name,
+                  pw.min_stock      AS min_stock,
+                  pw.optimal_stock  AS optimal_stock,
+                  ih.quantity       AS current_quantity,
+                  ih.expected_quantity AS expected_quantity,
+                  ih.difference     AS difference,
+                  ist.code          AS inventory_status,
+                  ih.scanned_at     AS last_scanned_at
+              FROM products p
+              CROSS JOIN warehouses w
+              JOIN product_warehouse pw
+                  ON pw.product_id = p.id
+                  AND pw.warehouse_id = w.id
+                  AND pw.is_deleted = false
+              LEFT JOIN LATERAL (
+                  SELECT ih2.quantity, ih2.expected_quantity,
+                         ih2.difference, ih2.status_id,
+                         ih2.scanned_at
+                  FROM inventory_history ih2
+                  WHERE ih2.product_id = p.id
+                    AND ih2.warehouse_id = w.id
+                    AND ih2.is_deleted = false
+                  ORDER BY ih2.scanned_at DESC
+                  LIMIT 1
+              ) ih ON true
+              LEFT JOIN inventory_status ist ON ist.id = ih.status_id
+              WHERE p.is_deleted = false
+                AND w.is_deleted = false;
+
+        # ──────────────────────────────────────────────
+        # 4. Ежедневная агрегация (для графиков/трендов)
+        # ──────────────────────────────────────────────
+        - sql:
+            sql: >
+              CREATE OR REPLACE VIEW v_daily_aggregation AS
+              SELECT
+                  ih.warehouse_id,
+                  w.code            AS warehouse_code,
+                  DATE(ih.scanned_at) AS scan_date,
+                  COUNT(*)           AS total_scans,
+                  SUM(ih.quantity)   AS total_quantity,
+                  SUM(ih.difference) AS total_difference,
+                  SUM(ABS(ih.difference)) AS total_abs_difference,
+                  COUNT(DISTINCT ih.product_id) AS unique_products_scanned,
+                  COUNT(DISTINCT ih.robot_id)   AS unique_robots
+              FROM inventory_history ih
+              JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
+              WHERE ih.is_deleted = false
+              GROUP BY ih.warehouse_id, w.code, DATE(ih.scanned_at);
+
+        # ──────────────────────────────────────────────
+        # 5. Сводка по расхождениям за последние 30 дней
+        # ──────────────────────────────────────────────
+        - sql:
+            sql: >
+              CREATE OR REPLACE VIEW v_discrepancy_summary AS
+              SELECT
+                  w.code            AS warehouse_code,
+                  w.name            AS warehouse_name,
+                  p.sku_code        AS sku_code,
+                  p.name            AS product_name,
+                  COUNT(*)          AS scan_count,
+                  SUM(ABS(ih.difference)) AS total_abs_discrepancy,
+                  AVG(ABS(ih.difference)) AS avg_discrepancy,
+                  MAX(ABS(ih.difference)) AS max_discrepancy,
+                  MAX(ih.scanned_at)      AS last_discrepancy_at
+              FROM inventory_history ih
+              JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
+              JOIN products p   ON p.id = ih.product_id   AND p.is_deleted = false
+              WHERE ih.is_deleted = false
+                AND ih.difference != 0
+                AND ih.scanned_at >= NOW() - INTERVAL '30 days'
+              GROUP BY w.code, w.name, p.sku_code, p.name;
+
+  - changeSet:
+      id: v1.3-add-report-indexes
+      author: dev
+      preConditions:
+        - tableExists:
+            tableName: inventory_history
+        - tableExists:
+            tableName: robots
+        - tableExists:
+            tableName: product_warehouse
+      changes:
+        # Составной индекс для ускорения LATERAL-подзапросов вьюх
+        - createIndex:
+            indexName: idx_inv_wh_product_scanned_deleted
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: warehouse_id
+              - column:
+                  name: product_id
+              - column:
+                  name: scanned_at
+                  descending: true
+              - column:
+                  name: is_deleted
+
+        # Индекс для фильтрации по роботу и дате
+        - createIndex:
+            indexName: idx_inv_robot_scanned_deleted
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: robot_id
+              - column:
+                  name: scanned_at
+                  descending: true
+              - column:
+                  name: is_deleted
+
+        # Индекс для product_warehouse
+        - createIndex:
+            indexName: idx_pw_product_warehouse_active
+            tableName: product_warehouse
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: warehouse_id
+              - column:
+                  name: is_deleted
