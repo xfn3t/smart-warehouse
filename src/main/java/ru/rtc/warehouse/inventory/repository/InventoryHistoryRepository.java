@@ -369,42 +369,44 @@ public interface InventoryHistoryRepository
     );
 
     @Query(
-        """
-        	SELECT ih
-        	FROM InventoryHistory ih
-        	WHERE ih.isDeleted = false
-        	  AND ih.warehouse.code = :warehouseCode
-        	  AND ih.createdAt = (
-        		  SELECT MAX(ih2.createdAt)
-        		  FROM InventoryHistory ih2
-        		  WHERE ih2.isDeleted = false
-        			AND ih2.warehouse.code = :warehouseCode
-        			AND ih2.product.id = ih.product.id
-        	  )
-        """
+        value = """
+        SELECT ih.*
+        FROM (
+        	SELECT DISTINCT ON (ih2.product_id)
+        		ih2.*
+        	FROM inventory_history ih2
+        	WHERE ih2.warehouse_id = (SELECT id FROM warehouses WHERE code = :warehouseCode)
+        	  AND ih2.is_deleted = false
+        	ORDER BY ih2.product_id, ih2.scanned_at DESC
+        ) ih
+        ORDER BY ih.scanned_at DESC NULLS LAST
+        """,
+        nativeQuery = true
     )
     List<InventoryHistory> findLatestByWarehouseGroupedByProduct(
         @Param("warehouseCode") String warehouseCode
     );
 
-
-    @Query(value = """
-        SELECT
-            p.sku_code AS skuCode,
-            p.name AS productName,
-            DATE_TRUNC(:period, ih.scanned_at) AS bucket,
-            CAST(AVG(ih.quantity) AS INTEGER) AS quantity
-        FROM inventory_history ih
-        JOIN products p ON p.id = ih.product_id
-        JOIN warehouses w ON w.id = ih.warehouse_id
-        WHERE w.code = :warehouseCode
-          AND p.sku_code IN (:productCodes)
-          AND ih.is_deleted = FALSE
-          AND (:from IS NULL OR ih.scanned_at >= CAST(:from AS TIMESTAMP))
-          AND (:to IS NULL OR ih.scanned_at <= CAST(:to AS TIMESTAMP))
-        GROUP BY p.sku_code, p.name, bucket
-        ORDER BY p.sku_code, bucket
-    """, nativeQuery = true)
+    @Query(
+        value = """
+            SELECT
+                p.sku_code AS skuCode,
+                p.name AS productName,
+                DATE_TRUNC(:period, ih.scanned_at) AS bucket,
+                CAST(AVG(ih.quantity) AS INTEGER) AS quantity
+            FROM inventory_history ih
+            JOIN products p ON p.id = ih.product_id
+            JOIN warehouses w ON w.id = ih.warehouse_id
+            WHERE w.code = :warehouseCode
+              AND p.sku_code IN (:productCodes)
+              AND ih.is_deleted = FALSE
+              AND (:from IS NULL OR ih.scanned_at >= CAST(:from AS TIMESTAMP))
+              AND (:to IS NULL OR ih.scanned_at <= CAST(:to AS TIMESTAMP))
+            GROUP BY p.sku_code, p.name, bucket
+            ORDER BY p.sku_code, bucket
+        """,
+        nativeQuery = true
+    )
     List<Object[]> findSmoothedByWarehouseAndSkus(
         @Param("warehouseCode") String warehouseCode,
         @Param("productCodes") List<String> productCodes,
