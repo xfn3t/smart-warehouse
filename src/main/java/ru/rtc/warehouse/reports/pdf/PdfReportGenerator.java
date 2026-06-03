@@ -4,12 +4,6 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import ru.rtc.warehouse.reports.dto.*;
-import ru.rtc.warehouse.reports.dto.robot.RobotActivityReportDTO;
-
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import ru.rtc.warehouse.reports.dto.*;
+import ru.rtc.warehouse.reports.dto.robot.RobotActivityReportDTO;
 
 @Slf4j
 @Component
@@ -29,7 +28,6 @@ public class PdfReportGenerator {
 
     private static final DateTimeFormatter DATE_FMT =
         DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-    private static final float PAGE_WIDTH = PageSize.A4.getWidth();
     private static final float MARGIN = 36f;
 
     public byte[] generateFullWarehouseReport(WarehouseReportDTO report) {
@@ -51,20 +49,17 @@ public class PdfReportGenerator {
                 addRobotStatusChart(doc, report.getRobots());
                 addRobotTable(doc, report.getRobots());
             }
-
             if (
                 report.getProducts() != null && !report.getProducts().isEmpty()
             ) {
                 addProductTable(doc, report.getProducts());
             }
-
             if (
                 report.getDailyAggregation() != null &&
                 !report.getDailyAggregation().isEmpty()
             ) {
                 addDailyChart(doc, report.getDailyAggregation());
             }
-
             if (
                 report.getDiscrepancies() != null &&
                 !report.getDiscrepancies().isEmpty()
@@ -72,7 +67,6 @@ public class PdfReportGenerator {
                 addDiscrepancyChart(doc, report.getDiscrepancies());
                 addDiscrepancyTable(doc, report.getDiscrepancies());
             }
-
             if (
                 report.getProductHistory() != null &&
                 !report.getProductHistory().isEmpty()
@@ -106,14 +100,7 @@ public class PdfReportGenerator {
                 report.getProductHistory() != null &&
                 !report.getProductHistory().isEmpty()
             ) {
-                doc.add(
-                    new Paragraph(
-                        "Графики по запрошенным товарам (" +
-                            report.getProductHistory().size() +
-                            " SKU)",
-                        fonts.bold(14)
-                    )
-                );
+                doc.newPage();
                 addProductHistoryCharts(doc, report.getProductHistory());
             }
         } catch (Exception e) {
@@ -152,7 +139,6 @@ public class PdfReportGenerator {
         WarehouseSummaryReportDTO summary
     ) throws DocumentException {
         if (summary == null) return;
-
         doc.add(new Paragraph("Сводка", fonts.bold(14)));
         doc.add(new Paragraph(" ", fonts.regular(4)));
 
@@ -199,7 +185,6 @@ public class PdfReportGenerator {
                 ? summary.getLastScanAt().format(DATE_FMT)
                 : "-"
         );
-
         doc.add(table);
         doc.add(new Paragraph(" ", fonts.regular(8)));
     }
@@ -216,7 +201,6 @@ public class PdfReportGenerator {
                     Collectors.summingInt(r -> 1)
                 )
             );
-
         Image chart = chartRenderer.renderRobotStatusPieChart(
             statusDistribution,
             "Статусы роботов"
@@ -250,7 +234,6 @@ public class PdfReportGenerator {
         for (String h : headers) {
             table.addCell(headerCell(h));
         }
-
         for (RobotActivityReportDTO r : robots) {
             table.addCell(cell(r.getRobotCode(), 8));
             table.addCell(cell(r.getRobotStatus(), 8));
@@ -260,10 +243,8 @@ public class PdfReportGenerator {
             table.addCell(cell(String.valueOf(r.getLowStockScans()), 8));
             table.addCell(cell(String.valueOf(r.getCriticalScans()), 8));
         }
-
         doc.add(table);
         doc.add(new Paragraph(" ", fonts.regular(8)));
-        doc.newPage();
     }
 
     private void addProductTable(Document doc, List<ProductReportDTO> products)
@@ -287,7 +268,6 @@ public class PdfReportGenerator {
         for (String h : headers) {
             table.addCell(headerCell(h));
         }
-
         int limit = Math.min(products.size(), 40);
         for (int i = 0; i < limit; i++) {
             ProductReportDTO p = products.get(i);
@@ -299,7 +279,6 @@ public class PdfReportGenerator {
             table.addCell(cell(nvl(p.getDifference()), 8));
             table.addCell(cell(nvl(p.getInventoryStatus()), 8));
         }
-
         if (products.size() > 40) {
             doc.add(
                 new Paragraph(
@@ -308,7 +287,6 @@ public class PdfReportGenerator {
                 )
             );
         }
-
         doc.add(table);
         doc.add(new Paragraph(" ", fonts.regular(8)));
     }
@@ -317,12 +295,10 @@ public class PdfReportGenerator {
         throws DocumentException {
         Map<LocalDate, Long> dateToQty = new LinkedHashMap<>();
         Map<LocalDate, Long> dateToDiff = new LinkedHashMap<>();
-
         for (DailyAggregationDTO d : daily) {
             dateToQty.put(d.getScanDate(), d.getTotalQuantity());
             dateToDiff.put(d.getScanDate(), d.getTotalAbsDifference());
         }
-
         Image chart = chartRenderer.renderDailyAggregationChart(
             dateToQty,
             dateToDiff,
@@ -349,7 +325,6 @@ public class PdfReportGenerator {
             .limit(10)
             .map(d -> Map.entry(d.getSkuCode(), d.getTotalAbsDiscrepancy()))
             .collect(Collectors.toList());
-
         Image chart = chartRenderer.renderTopDiscrepancyChart(
             top,
             "Топ-10 продуктов по |расхождению| за 30 дней"
@@ -384,7 +359,6 @@ public class PdfReportGenerator {
         for (String h : headers) {
             table.addCell(headerCell(h));
         }
-
         int limit = Math.min(discrepancies.size(), 20);
         for (int i = 0; i < limit; i++) {
             DiscrepancySummaryDTO d = discrepancies.get(i);
@@ -402,7 +376,6 @@ public class PdfReportGenerator {
             );
             table.addCell(cell(String.valueOf(d.getMaxDiscrepancy()), 8));
         }
-
         doc.add(table);
     }
 
@@ -410,8 +383,14 @@ public class PdfReportGenerator {
         Document doc,
         Map<String, List<ProductDailyHistoryDTO>> productHistory
     ) throws DocumentException {
-        doc.newPage();
-        doc.add(new Paragraph("История по продуктам", fonts.bold(16)));
+        doc.add(
+            new Paragraph(
+                "Графики по запрошенным товарам (" +
+                    productHistory.size() +
+                    " SKU)",
+                fonts.bold(14)
+            )
+        );
         doc.add(new Paragraph(" ", fonts.regular(6)));
 
         int skuIndex = 0;
