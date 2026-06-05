@@ -36,7 +36,6 @@ LOG_PREFIX = "[EMU-DB]"
 
 # Util
 def now_iso():
-    # Возвращаем ISO-строку в UTC с суффиксом 'Z' (пример: 2025-11-02T11:46:09.302621Z)
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
@@ -45,10 +44,6 @@ def log(*args, **kwargs):
 
 
 def _loc_to_lock_key(loc_id) -> int:
-    """
-    Convert location id (numeric or text) to an integer suitable for pg advisory lock.
-    Use simple 32-bit adler32 to get a stable positive integer.
-    """
     if loc_id is None:
         return 0
     try:
@@ -59,7 +54,6 @@ def _loc_to_lock_key(loc_id) -> int:
             return int(s)
     except Exception:
         pass
-    # fallback: hash to 32-bit positive int
     return zlib.adler32(str(loc_id).encode("utf-8"))
 
 
@@ -75,13 +69,9 @@ class DbAdapter:
         }
 
     def _get_conn(self):
-        # Создаем копию параметров для безопасности
         params = dict(self.conn_params)
-
-        # Тщательно очищаем все строковые параметры
         for k, v in list(params.items()):
             if isinstance(v, str):
-                # Удаляем BOM, неразрывные пробелы и другие проблемные символы
                 clean = (
                     v.replace("\ufeff", "")
                     .replace("\u00a0", " ")
@@ -90,19 +80,11 @@ class DbAdapter:
                     .strip()
                 )
                 params[k] = clean
-
-        # Явно устанавливаем кодировку UTF-8 в параметрах подключения
         params["client_encoding"] = "UTF8"
-
-        # Альтернативно: используем options для установки кодировки
         if "options" not in params:
             params["options"] = "-c client_encoding=UTF8"
-
-        # Для Windows: устанавливаем кодировку в окружении
         import os
-
         os.environ["PGCLIENTENCODING"] = "UTF8"
-
         try:
             log("DB connect params (cleaned):")
             for k, v in params.items():
@@ -110,34 +92,24 @@ class DbAdapter:
                     log(f"  {k} = [HIDDEN]")
                 else:
                     log(f"  {k} = {repr(v)}")
-
             return psycopg2.connect(**params)
         except UnicodeDecodeError as e:
             log(f"UnicodeDecodeError details: {e}")
             log(f"Error at position: {e.start}-{e.end}")
-            # Пробуем альтернативный подход с DSN строкой
             return self._get_conn_fallback(params)
         except Exception as e:
             log(f"Connection error: {e}")
             raise
 
     def _get_conn_fallback(self, params):
-        """Альтернативный метод подключения через DSN строку"""
         try:
-            # Собираем DSN строку вручную
             dsn_parts = []
             for k, v in params.items():
                 if k not in ["options", "client_encoding"] and v is not None:
                     dsn_parts.append(f"{k}={v}")
-
-            # Добавляем кодировку
             dsn_parts.append("client_encoding=UTF8")
-
             dsn = " ".join(dsn_parts)
-            log(
-                f"Trying fallback DSN: {dsn.replace('password=warehouse_pass', 'password=[HIDDEN]')}"
-            )
-
+            log(f"Trying fallback DSN: {dsn.replace('password=warehouse_pass', 'password=[HIDDEN]')}")
             return psycopg2.connect(dsn)
         except Exception as e:
             log(f"Fallback connection also failed: {e}")
@@ -183,16 +155,13 @@ class DbAdapter:
         try:
             with self._get_conn() as conn:
                 with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    if (
-                        isinstance(warehouse_code_or_id, int)
-                        or str(warehouse_code_or_id).isdigit()
-                    ):
+                    if isinstance(warehouse_code_or_id, int) or str(warehouse_code_or_id).isdigit():
                         cur.execute(
                             """
                             SELECT id, zone, row, shelf
                             FROM location
                             WHERE warehouse_id = %s
-                        """,
+                            """,
                             (int(warehouse_code_or_id),),
                         )
                     else:
@@ -207,7 +176,7 @@ class DbAdapter:
                                 SELECT id, zone, row, shelf
                                 FROM location
                                 WHERE warehouse_id = %s
-                            """,
+                                """,
                                 (w["id"],),
                             )
                         else:
@@ -237,31 +206,17 @@ class DbAdapter:
                     rows = cur.fetchall()
                     products = []
                     for r in rows:
-                        products.append(
-                            {
-                                "product_id": r.get("product_id"),
-                                "sku_code": r.get("sku_code"),
-                                "name": r.get("name"),
-                                "quantity": r.get("quantity"),
-                                "scanned_at": r.get("scanned_at"),
-                            }
-                        )
+                        products.append({
+                            "product_id": r.get("product_id"),
+                            "sku_code": r.get("sku_code"),
+                            "name": r.get("name"),
+                            "quantity": r.get("quantity"),
+                            "scanned_at": r.get("scanned_at"),
+                        })
                     return products
         except Exception as e:
             log("get_location_contents error:", e)
             return []
-
-    def post_robot_data(
-        self, robot_code: str, payload: Dict, token: Optional[str]
-    ) -> bool:
-        url = f"{API_URL.rstrip('/')}/api/robots/data"
-        return self._post(url, payload, token)
-
-    def post_robot_status(
-        self, robot_code: str, payload: Dict, token: Optional[str]
-    ) -> bool:
-        url = f"{API_URL.rstrip('/')}/api/robots/status"
-        return self._post(url, payload, token)
 
     def _post(self, url: str, payload: Dict, token: Optional[str]) -> bool:
         headers = {"Content-Type": "application/json"}
@@ -277,13 +232,15 @@ class DbAdapter:
             log(f"POST {url} error:", e)
         return False
 
-        # Token helper: try several common locations for token field
-        def get_robot_token(self, robot_code: str) -> Optional[str]:
-        """
-        Fetch single latest token for a given robot_code from robot_tokens table.
-        This uses an explicit join robots -> robot_tokens and returns most recent token.
-        Returns None if table/rows do not exist.
-        """
+    def post_robot_data(self, robot_code: str, payload: Dict, token: Optional[str]) -> bool:
+        url = f"{API_URL.rstrip('/')}/api/robots/data"
+        return self._post(url, payload, token)
+
+    def post_robot_status(self, robot_code: str, payload: Dict, token: Optional[str]) -> bool:
+        url = f"{API_URL.rstrip('/')}/api/robots/status"
+        return self._post(url, payload, token)
+
+    def get_robot_token(self, robot_code: str) -> Optional[str]:
         q = """
             SELECT rt.token
             FROM robot_tokens rt
@@ -299,19 +256,12 @@ class DbAdapter:
                     row = cur.fetchone()
                     return row[0] if row else None
         except Exception as e:
-            # If table doesn't exist or some other DB error -> log and return None
             log("get_robot_token error:", e)
             return None
 
     def get_tokens_for_robot_codes(self, robot_codes: List[str]) -> Dict[str, str]:
-        """
-        Efficiently fetch one (latest) token per robot_code for a list of robot_codes.
-        Returns mapping robot_code -> token (only for those that have tokens).
-        Uses DISTINCT ON to pick the latest token per robot_code.
-        """
         if not robot_codes:
             return {}
-        # Unique list
         codes = list(dict.fromkeys(robot_codes))
         q = """
             SELECT DISTINCT ON (r.robot_code) r.robot_code, rt.token
@@ -330,21 +280,16 @@ class DbAdapter:
             log("get_tokens_for_robot_codes error:", e)
             return {}
 
-        # Ensure robot exists in DB (create if missing)
-        def ensure_robot_exists(self, robot_code: str, warehouse_code: str) -> bool:
-        """Create robot row in DB if it doesn't exist. Returns True if robot exists (or was created)."""
+    def ensure_robot_exists(self, robot_code: str, warehouse_code: str) -> bool:
         try:
             with self._get_conn() as conn:
                 with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    # Check if robot already exists
                     cur.execute(
                         "SELECT id FROM robots WHERE robot_code = %s AND is_deleted = FALSE",
                         (robot_code,),
                     )
                     if cur.fetchone():
-                        return True  # already exists
-
-                    # Get warehouse_id
+                        return True
                     cur.execute(
                         "SELECT id FROM warehouses WHERE code = %s AND is_deleted = FALSE LIMIT 1",
                         (warehouse_code,),
@@ -353,8 +298,6 @@ class DbAdapter:
                     if not wh:
                         log(f"Cannot create robot {robot_code}: warehouse {warehouse_code} not found in DB")
                         return False
-
-                    # Get or create a WORKING status
                     cur.execute(
                         "SELECT id FROM robot_status WHERE code = 'WORKING' LIMIT 1"
                     )
@@ -368,8 +311,6 @@ class DbAdapter:
                     if not st:
                         log(f"Cannot create robot {robot_code}: no status")
                         return False
-
-                # Insert robot
                 with conn.cursor() as cur:
                     cur.execute(
                         """
@@ -379,16 +320,13 @@ class DbAdapter:
                         (robot_code, wh["id"], st["id"]),
                     )
                     conn.commit()
-
             log(f"Created robot {robot_code} in warehouse {warehouse_code}")
             return True
         except Exception as e:
             log(f"ensure_robot_exists error for {robot_code}: {e}")
             return False
 
-        # Get real products for a warehouse (via product_warehouse)
-        def get_warehouse_products(self, warehouse_code: str) -> List[Dict]:
-        """Return list of {sku_code, name} for products in this warehouse."""
+    def get_warehouse_products(self, warehouse_code: str) -> List[Dict]:
         try:
             q = """
                 SELECT p.sku_code, p.name
@@ -408,9 +346,7 @@ class DbAdapter:
             log("get_warehouse_products error:", e)
             return []
 
-        # Auto‑register robot token (generates JWT, inserts into robot_tokens)
-        def ensure_robot_token(self, robot_code: str) -> Optional[str]:
-        """Generate JWT for robot, store in robot_tokens table, return token or None."""
+    def ensure_robot_token(self, robot_code: str) -> Optional[str]:
         try:
             with self._get_conn() as conn:
                 with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -420,11 +356,8 @@ class DbAdapter:
                     )
                     robot = cur.fetchone()
                     if not robot:
-                        # Robot not in DB yet — skip (caller should use ensure_robot_exists first)
                         log(f"Robot {robot_code} not found in DB, cannot create token")
                         return None
-
-                    # Check if valid (non‑revoked) token already exists
                     cur.execute(
                         """
                         SELECT rt.token FROM robot_tokens rt
@@ -437,8 +370,6 @@ class DbAdapter:
                     if existing:
                         log(f"Robot {robot_code} already has a valid token")
                         return existing["token"]
-
-            # Generate JWT matching RobotAuthService.createRobotToken()
             now_dt = datetime.now(timezone.utc)
             claims = {
                 "roles": ["ROBOT"],
@@ -450,8 +381,6 @@ class DbAdapter:
                 JWT_SECRET,
                 algorithm="HS256",
             )
-
-            # Insert into robot_tokens
             with self._get_conn() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
@@ -462,19 +391,13 @@ class DbAdapter:
                         (robot["id"], token, now_dt),
                     )
                     conn.commit()
-
             log(f"Created token for {robot_code}")
             return token
         except Exception as e:
             log(f"ensure_robot_token error for {robot_code}: {e}")
             return None
 
-        # Advisory lock helpers (use a persistent connection for the lock)
-        def try_advisory_lock(self, conn, loc_id) -> bool:
-        """
-        Attempt to acquire pg_try_advisory_lock on key derived from loc_id.
-        conn must be a live psycopg2 connection (session-level lock).
-        """
+    def try_advisory_lock(self, conn, loc_id) -> bool:
         try:
             key = _loc_to_lock_key(loc_id)
             with conn.cursor() as cur:
@@ -497,7 +420,7 @@ class DbAdapter:
             return False
 
 
-# Rest of emulator (same logic as earlier) but with locks + token extraction
+# EmulatorManager class
 class EmulatorManager:
     def __init__(self, api: DbAdapter, mode="live"):
         self.api = api
@@ -528,9 +451,7 @@ class EmulatorManager:
                     self.locations_by_wh[code] = locs
                 robots = self.api.get_robots()
                 if not robots:
-                    log(
-                        "No robots found in DB; will create offline robots if requested"
-                    )
+                    log("No robots found in DB; will create offline robots if requested")
                     self.robots = []
                 else:
                     normalized = []
@@ -550,44 +471,27 @@ class EmulatorManager:
                 "name": "EMULATED",
             }
             self.warehouses[code] = wh
-            locs = self._fabricate_locations(
-                code, wh["zone_max_size"], wh["row_max_size"], wh["shelf_max_size"]
-            )
+            locs = self._fabricate_locations(code, wh["zone_max_size"], wh["row_max_size"], wh["shelf_max_size"])
             skus = [f"SKU-{i:04d}" for i in range(1, 101)]
             for i, L in enumerate(locs):
                 if random.random() < 0.5:
-                    L["products"] = [
-                        {
-                            "sku_code": random.choice(skus),
-                            "name": f"Product {i}",
-                            "quantity": random.randint(1, 50),
-                        }
-                    ]
+                    L["products"] = [{
+                        "sku_code": random.choice(skus),
+                        "name": f"Product {i}",
+                        "quantity": random.randint(1, 50),
+                    }]
             self.locations_by_wh[code] = locs
             count = ROBOTS_COUNT or 4
-            self.robots = [
-                {"robot_code": f"RB-EMU-{i + 1:04d}", "warehouse_code": code}
-                for i in range(count)
-            ]
-            log(
-                f"Offline: created {code} locations={len(locs)} robots={len(self.robots)}"
-            )
+            self.robots = [{"robot_code": f"RB-EMU-{i+1:04d}", "warehouse_code": code} for i in range(count)]
+            log(f"Offline: created {code} locations={len(locs)} robots={len(self.robots)}")
 
     def _fabricate_locations(self, code, zones, rows, shelves):
         arr = []
         idx = 1
-        for z in range(1, zones + 1):
-            for r in range(1, rows + 1):
-                for s in range(1, shelves + 1):
-                    arr.append(
-                        {
-                            "id": idx,
-                            "label": f"{code}-{idx}",
-                            "zone": z,
-                            "row": r,
-                            "shelf": s,
-                        }
-                    )
+        for z in range(1, zones+1):
+            for r in range(1, rows+1):
+                for s in range(1, shelves+1):
+                    arr.append({"id": idx, "label": f"{code}-{idx}", "zone": z, "row": r, "shelf": s})
                     idx += 1
         return arr
 
@@ -601,7 +505,6 @@ class EmulatorManager:
                 log(f"Robot {r.get('robot_code')} has no valid warehouse ({wc}), skipping")
                 continue
             robots_grouped.setdefault(wc, []).append(r)
-
         for wc, robots in robots_grouped.items():
             locs = self.locations_by_wh.get(wc, [])
             if not locs:
@@ -618,18 +521,9 @@ class EmulatorManager:
         return self.routes_by_robot.get(robot_code, [])
 
 
-# RobotWorker uses advisory locks via a fresh connection per scan to avoid collisions.
+# RobotWorker
 class RobotWorker(threading.Thread):
-    def __init__(
-        self,
-        robot_code,
-        warehouse_code,
-        route,
-        api: DbAdapter,
-        token,
-        update_interval,
-        status_interval,
-    ):
+    def __init__(self, robot_code, warehouse_code, route, api: DbAdapter, token, update_interval, status_interval):
         super().__init__(daemon=True)
         self.robot_code = robot_code
         self.warehouse_code = warehouse_code
@@ -641,10 +535,8 @@ class RobotWorker(threading.Thread):
         self.battery = 100.0
         self.running = True
         self.last_data_sent = None
-        self._last_scan_fp: Dict[str, str] = {}  # loc_key -> fingerprint
-        self._warehouse_products: List[
-            Dict
-        ] = []  # cached real products for this warehouse
+        self._last_scan_fp: Dict[str, str] = {}
+        self._warehouse_products: List[Dict] = []
 
     def run(self):
         if not self.route:
@@ -655,7 +547,6 @@ class RobotWorker(threading.Thread):
         while self.running:
             try:
                 loc = self.route[idx % len(self.route)]
-                loc_str = f"{loc.get('zone',0)}-{loc.get('row',0)}-{loc.get('shelf',0)}"
                 self.scan_and_post(loc)
                 self.last_data_sent = now_iso()
                 now = time.time()
@@ -677,66 +568,37 @@ class RobotWorker(threading.Thread):
         self.running = False
 
     def scan_and_post(self, location):
-        loc_id = location.get("id")
         try:
-
-            # ============ build scan_results from REAL warehouse products ============
-            # Cache real products for this warehouse (lazy load)
             if not self._warehouse_products:
-                self._warehouse_products = self.api.get_warehouse_products(
-                    self.warehouse_code
-                )
+                self._warehouse_products = self.api.get_warehouse_products(self.warehouse_code)
                 if not self._warehouse_products:
-                    # Fallback: try any warehouse
                     whs = self.api.get_warehouses()
                     if whs:
-                        self._warehouse_products = self.api.get_warehouse_products(
-                            whs[0].get("code", "")
-                        )
+                        self._warehouse_products = self.api.get_warehouse_products(whs[0].get("code", ""))
                 if not self._warehouse_products:
-                    log(
-                        f"{self.robot_code} no products found for warehouse {self.warehouse_code}, skipping scan"
-                    )
+                    log(f"{self.robot_code} no products found for warehouse {self.warehouse_code}, skipping scan")
                     return
-                log(
-                    f"{self.robot_code} loaded {len(self._warehouse_products)} real products for {self.warehouse_code}"
-                )
+                log(f"{self.robot_code} loaded {len(self._warehouse_products)} real products for {self.warehouse_code}")
 
-            # No dedup — scan every location on every visit
-
-            # Pick 1-3 random real products to "scan" at this location
             scan_results = []
             n_products = min(random.randint(1, 3), len(self._warehouse_products))
             picked = random.sample(self._warehouse_products, n_products)
-
             for p in picked:
                 sku = p.get("sku_code", "")
                 name = p.get("name", "unknown")
-
-                # Simulate: most scans are normal, some have anomalies
                 base_q = random.randint(5, 200)
                 r = random.random()
                 if r < SIM_P_MISSING:
                     q = 0
                     status_code = "CRITICAL"
                 elif r < SIM_P_MISSING + SIM_P_SWAPPED:
-                    # Pick a different real product as "swapped"
-                    other = random.choice(
-                        [
-                            x
-                            for x in self._warehouse_products
-                            if x.get("sku_code") != sku
-                        ]
-                        or [p]
-                    )
-                    scan_results.append(
-                        {
-                            "productCode": other.get("sku_code", sku),
-                            "productName": other.get("name", name) + " (swapped)",
-                            "quantity": random.randint(1, 10),
-                            "statusCode": "OK",
-                        }
-                    )
+                    other = random.choice([x for x in self._warehouse_products if x.get("sku_code") != sku] or [p])
+                    scan_results.append({
+                        "productCode": other.get("sku_code", sku),
+                        "productName": other.get("name", name) + " (swapped)",
+                        "quantity": random.randint(1, 10),
+                        "statusCode": "OK",
+                    })
                     continue
                 elif r < SIM_P_MISSING + SIM_P_SWAPPED + SIM_P_COUNT_ERROR:
                     delta = int(max(-base_q, base_q * random.uniform(-0.2, 0.2)))
@@ -744,32 +606,19 @@ class RobotWorker(threading.Thread):
                     status_code = "LOW_STOCK" if q < 10 else "OK"
                 else:
                     q = base_q
-                    status_code = (
-                        "OK" if q > 20 else ("LOW_STOCK" if q > 5 else "CRITICAL")
-                    )
-
-                scan_results.append(
-                    {
-                        "productCode": sku,
-                        "productName": name,
-                        "quantity": int(q),
-                        "statusCode": status_code,
-                    }
-                )
-
-            # if scan_results is still empty, nothing to post — skip
+                    status_code = "OK" if q > 20 else ("LOW_STOCK" if q > 5 else "CRITICAL")
+                scan_results.append({
+                    "productCode": sku,
+                    "productName": name,
+                    "quantity": int(q),
+                    "statusCode": status_code,
+                })
             if not scan_results:
                 return
-
-            # ============ prepare payload matching RobotDataRequest exactly ============
-            next_checkpoint = (
-                location.get("label")
-                or f"{location.get('zone', 0)}-{location.get('row', 0)}-{location.get('shelf', 0)}"
-            )
-
+            next_checkpoint = location.get("label") or f"{location.get('zone',0)}-{location.get('row',0)}-{location.get('shelf',0)}"
             payload = {
-                "code": self.robot_code,  # server expects "code" matching RB-\d{4}
-                "timestamp": now_iso(),  # ISO with Z
+                "code": self.robot_code,
+                "timestamp": now_iso(),
                 "location": {
                     "zone": int(location.get("zone", 0)),
                     "row": int(location.get("row", 0)),
@@ -779,8 +628,6 @@ class RobotWorker(threading.Thread):
                 "batteryLevel": int(round(self.battery)),
                 "nextCheckpoint": str(next_checkpoint),
             }
-
-            # ensure we have a token (try DB if not provided, create if missing)
             token = self.token
             if not token:
                 try:
@@ -794,55 +641,35 @@ class RobotWorker(threading.Thread):
                     self.api.ensure_robot_exists(self.robot_code, self.warehouse_code)
                     token = self.api.ensure_robot_token(self.robot_code)
                     if token:
-                        self.token = token  # cache for future use
+                        self.token = token
                         log(f"{self.robot_code} created and cached token")
                 except Exception:
                     pass
-
-            ok = self.api.post_robot_data(
-                self.robot_code, payload, token or ROBOT_AUTH_TOKEN
-            )
+            ok = self.api.post_robot_data(self.robot_code, payload, token or ROBOT_AUTH_TOKEN)
             if ok:
-                log(
-                    f"{self.robot_code} scanned {location.get('zone')}-{location.get('row')}-{location.get('shelf')} -> {len(scan_results)}"
-                )
+                log(f"{self.robot_code} scanned {location.get('zone')}-{location.get('row')}-{location.get('shelf')} -> {len(scan_results)}")
             else:
-                # временно логируем payload для отладки
                 try:
-                    log(
-                        f"{self.robot_code} failed to post scan for {location.get('id')}; payload={payload}"
-                    )
+                    log(f"{self.robot_code} failed to post scan for {location.get('id')}; payload={payload}")
                 except Exception:
-                    log(
-                        f"{self.robot_code} failed to post scan for {location.get('id')}"
-                    )
-
+                    log(f"{self.robot_code} failed to post scan for {location.get('id')}")
         except Exception as e:
             log(f"{self.robot_code} scan_and_post error: {e}\n{traceback.format_exc()}")
 
     def post_status(self):
-        # Форматируем timestamp для Java Instant
         from datetime import datetime
-
         current_time = datetime.now(timezone.utc)
         timestamp_iso = current_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
         payload = {
             "robotId": self.robot_code,
             "timestamp": timestamp_iso,
             "status": "WORKING" if self.battery > 20 else "CHARGING",
             "batteryLevel": int(round(self.battery)),
         }
-
-        # Добавляем lastDataSent только если он есть
         if self.last_data_sent:
-            # Конвертируем в правильный формат для Java Instant
-            last_sent_dt = datetime.fromisoformat(
-                self.last_data_sent.replace("Z", "+00:00")
-            )
+            last_sent_dt = datetime.fromisoformat(self.last_data_sent.replace("Z", "+00:00"))
             last_sent_iso = last_sent_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             payload["lastDataSent"] = last_sent_iso
-
         token = self.token or ROBOT_AUTH_TOKEN
         if not token:
             try:
@@ -852,11 +679,9 @@ class RobotWorker(threading.Thread):
                     self.token = token
             except Exception:
                 pass
-
         ok = self.api.post_robot_status(self.robot_code, payload, token)
         if not ok:
             log(f"{self.robot_code} failed to post status")
-            # Добавим больше информации для отладки
             log(f"Status payload: {payload}")
             log(f"Using token: {'Yes' if token else 'No'}")
 
@@ -864,40 +689,25 @@ class RobotWorker(threading.Thread):
 # Runner
 def main():
     log("Starting emulator (DB mode)", "MODE=", MODE)
-    db = DbAdapter(
-        POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-    )
+    db = DbAdapter(POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD)
     manager = EmulatorManager(db, mode=MODE)
     manager.load()
-
     if MODE == "offline" and ROBOTS_COUNT:
         pass
     elif MODE == "live":
         if not manager.robots:
             log("No robots found in DB and not in offline mode. Nothing to emulate.")
             return
-
     manager.plan_routes()
-
     robot_codes = [r.get("robot_code") for r in manager.robots if r.get("robot_code")]
     tokens_map = db.get_tokens_for_robot_codes(robot_codes)
-
-    # Ensure robots exist in DB, then auto-create tokens
     for rc in robot_codes:
-        wc = next(
-            (
-                r.get("warehouse_code")
-                for r in manager.robots
-                if r.get("robot_code") == rc
-            ),
-            next(iter(manager.warehouses.keys()), "WH-EMU-1"),
-        )
+        wc = next((r.get("warehouse_code") for r in manager.robots if r.get("robot_code") == rc), next(iter(manager.warehouses.keys()), "WH-EMU-1"))
         db.ensure_robot_exists(rc, wc)
         if rc not in tokens_map:
             new_token = db.ensure_robot_token(rc)
             if new_token:
                 tokens_map[rc] = new_token
-
     workers = []
     for r in manager.robots:
         robot_code = r.get("robot_code")
@@ -905,10 +715,7 @@ def main():
         route = manager.get_route_for(robot_code)
         if not route:
             route = manager.locations_by_wh.get(wc, [])[:]
-
-        # Приоритет: специфичный токен из БД -> переменная окружения ROBOT_AUTH_TOKEN -> None
         token = tokens_map.get(robot_code) or ROBOT_AUTH_TOKEN
-
         worker = RobotWorker(
             robot_code=robot_code,
             warehouse_code=wc,
@@ -921,7 +728,6 @@ def main():
         worker.start()
         workers.append(worker)
         log(f"Started worker {robot_code} (route len={len(route)})")
-
     try:
         while True:
             time.sleep(60)
