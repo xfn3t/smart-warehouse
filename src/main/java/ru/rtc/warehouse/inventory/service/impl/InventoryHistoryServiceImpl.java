@@ -1,12 +1,14 @@
 package ru.rtc.warehouse.inventory.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryCreateRequest;
@@ -40,6 +42,7 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
     private final IHProductEntServiceAdapter productAdapter;
     private final ProductMapper productMapper;
     private final InventoryHistoryRepository inventoryHistoryRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public void save(InventoryHistoryCreateRequest request) {
         InventoryHistory inventoryHistory = ihMapper.toEntity(request);
@@ -194,12 +197,10 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                 grp.setSkuCode(entry.getKey());
                 List<InventoryHistoryDTO> items = entry.getValue();
                 if (!items.isEmpty()) {
-                    // Static data at group level — pull from first item
                     grp.setProduct(items.get(0).getProduct());
                     grp.setWarehouse(items.get(0).getWarehouse());
                     grp.setRobot(items.get(0).getRobot());
                 }
-                // Keep only dynamic fields in history items
                 for (InventoryHistoryDTO item : items) {
                     item.setProduct(null);
                     item.setWarehouse(null);
@@ -216,36 +217,139 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
 
     @Override
     public List<LowStockProductDTO> findLowStockProducts(String warehouseCode) {
-        return inventoryHistoryRepository.findLowStockProductsByWarehouse(warehouseCode);
+        String sql = """
+            SELECT
+                p.name AS productName,
+                p.sku_code AS productCode,
+                pw.min_stock AS minStock,
+                latest.qty AS quantity,
+                (pw.min_stock - latest.qty) AS replenish
+            FROM product_warehouse pw
+            JOIN products p ON p.id = pw.product_id AND p.is_deleted = false
+            JOIN warehouses w ON w.id = pw.warehouse_id AND w.is_deleted = false
+            JOIN LATERAL (
+                SELECT DISTINCT ON (ih.product_id)
+                    ih.quantity AS qty,
+                    ih.status_id AS sid
+                FROM inventory_history ih
+                WHERE ih.product_id = pw.product_id
+                  AND ih.warehouse_id = pw.warehouse_id
+                  AND ih.is_deleted = false
+                ORDER BY ih.product_id, ih.scanned_at DESC
+            ) latest ON true
+            JOIN inventory_status ist ON ist.id = latest.sid
+            WHERE w.code = ?
+              AND pw.is_deleted = false
+              AND ist.code IN ('LOW_STOCK', 'CRITICAL')
+            ORDER BY pw.min_stock - latest.qty DESC
+            """;
+        return jdbcTemplate.query(
+            sql,
+            (rs, rowNum) -> {
+                LowStockProductDTO dto = new LowStockProductDTO() {
+                    private final String pn = rs.getString("productName");
+                    private final String pc = rs.getString("productCode");
+                    private final Integer ms = rs.getInt("minStock");
+                    private final Integer q = rs.getInt("quantity");
+                    private final Integer r = rs.getInt("replenish");
+
+                    public String getProductName() {
+                        return pn;
+                    }
+
+                    public String getProductCode() {
+                        return pc;
+                    }
+
+                    public Integer getMinStock() {
+                        return ms;
+                    }
+
+                    public Integer getQuantity() {
+                        return q;
+                    }
+
+                    public Integer getReplenish() {
+                        return r;
+                    }
+                };
+                return dto;
+            },
+            warehouseCode
+        );
     }
 
     @Override
     public List<InventoryHistorySmoothedDTO> findSmoothed(
-        String warehouseCode, List<String> productCodes,
-        String period, String from, String to
+        String warehouseCode,
+        List<String> productCodes,
+        String period,
+        String from,
+        String to
     ) {
-        List<Object[]> rows = inventoryHistoryRepository.findSmoothedByWarehouseAndSkus(
-            warehouseCode, productCodes, period, from, to);
+        List<Object[]> rows =
+            inventoryHistoryRepository.findSmoothedByWarehouseAndSkus(
+                warehouseCode,
+                productCodes,
+                period,
+                from,
+                to
+            );
 
-        // Group by skuCode
-        Map<String, List<Object[]>> grouped = rows.stream()
+        Map<String, List<Object[]>> grouped = rows
+            .stream()
             .collect(Collectors.groupingBy(r -> (String) r[0]));
 
-        return grouped.entrySet().stream().map(entry -> {
-            InventoryHistorySmoothedDTO dto = new InventoryHistorySmoothedDTO();
-            dto.setSkuCode(entry.getKey());
-            // Resolve real ProductDTO with warehouse parameters
-            Product product = productAdapter.findByCode(entry.getKey());
-            dto.setProduct(productMapper.toDto(product));
-            dto.setDataPoints(entry.getValue().stream().map(r -> {
-                java.sql.Timestamp ts = (java.sql.Timestamp) r[2];
-                Integer qty = ((Number) r[3]).intValue();
-                return InventoryHistorySmoothedDTO.DataPoint.builder()
-                    .timestamp(ts.toInstant().toString())
-                    .quantity(qty)
-                    .build();
-            }).collect(Collectors.toList()));
-            return dto;
-        }).collect(Collectors.toList());
+        Map<String, Integer> currentQtyMap = new HashMap<>();
+        if (!grouped.isEmpty()) {
+            jdbcTemplate.query(
+                """
+                SELECT DISTINCT ON (p.sku_code)
+                    p.sku_code, ih.quantity
+                FROM inventory_history ih
+                JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
+                JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
+                WHERE w.code = ?
+                  AND p.sku_code = ANY(?)
+                  AND ih.is_deleted = false
+                ORDER BY p.sku_code, ih.scanned_at DESC
+                """,
+                (rs, rowNum) ->
+                    currentQtyMap.put(
+                        rs.getString("sku_code"),
+                        rs.getInt("quantity")
+                    ),
+                warehouseCode,
+                grouped.keySet().toArray(new String[0])
+            );
+        }
+
+        return grouped
+            .entrySet()
+            .stream()
+            .map(entry -> {
+                InventoryHistorySmoothedDTO dto =
+                    new InventoryHistorySmoothedDTO();
+                dto.setSkuCode(entry.getKey());
+                Product product = productAdapter.findByCode(entry.getKey());
+                dto.setProduct(productMapper.toDto(product));
+                dto.setCurrentQuantity(currentQtyMap.get(entry.getKey()));
+                dto.setDataPoints(
+                    entry
+                        .getValue()
+                        .stream()
+                        .map(r -> {
+                            java.sql.Timestamp ts = (java.sql.Timestamp) r[2];
+                            Integer qty = ((Number) r[3]).intValue();
+                            return InventoryHistorySmoothedDTO.DataPoint.builder()
+                                .timestamp(ts.toInstant().toString())
+                                .quantity(qty)
+                                .build();
+                        })
+                        .collect(Collectors.toList())
+                );
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 }
