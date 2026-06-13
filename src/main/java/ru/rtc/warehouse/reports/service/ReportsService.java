@@ -53,6 +53,17 @@ public interface ReportsService {
         UserDetailsImpl principal
     );
 
+    ReportResponseDTO generateExcelReport(
+        String warehouseCode,
+        UserDetailsImpl principal
+    );
+
+    ReportResponseDTO generateExcelReportForSkus(
+        String warehouseCode,
+        List<String> skuCodes,
+        UserDetailsImpl principal
+    );
+
     List<ReportMetadataDTO> getUserReports(Long userId);
 
     List<ReportMetadataDTO> getReportsByWarehouse(
@@ -60,5 +71,5 @@ public interface ReportsService {
         String warehouseCode
     );
 
-    byte[] downloadReportFromS3(UUID reportUid);
+    ReportFileDTO downloadReportFromS3(UUID reportUid);
 }

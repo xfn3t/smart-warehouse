@@ -204,6 +204,39 @@ public class ReportsController {
         );
     }
 
+    @GetMapping("/warehouses/{warehouseCode}/excel")
+    @RequiresOwnership(
+        codeParam = "warehouseCode",
+        entityType = RequiresOwnership.EntityType.WAREHOUSE
+    )
+    public ResponseEntity<ReportResponseDTO> generateExcel(
+        @PathVariable String warehouseCode,
+        @AuthenticationPrincipal UserDetailsImpl principal
+    ) {
+        return ResponseEntity.ok(
+            reportsService.generateExcelReport(warehouseCode, principal)
+        );
+    }
+
+    @PostMapping("/warehouses/{warehouseCode}/excel/by-skus")
+    @RequiresOwnership(
+        codeParam = "warehouseCode",
+        entityType = RequiresOwnership.EntityType.WAREHOUSE
+    )
+    public ResponseEntity<ReportResponseDTO> generateExcelForSkus(
+        @PathVariable String warehouseCode,
+        @RequestBody List<String> skuCodes,
+        @AuthenticationPrincipal UserDetailsImpl principal
+    ) {
+        return ResponseEntity.ok(
+            reportsService.generateExcelReportForSkus(
+                warehouseCode,
+                skuCodes,
+                principal
+            )
+        );
+    }
+
     @GetMapping("/user")
     public ResponseEntity<List<ReportMetadataDTO>> getUserReports(
         @AuthenticationPrincipal UserDetailsImpl principal
@@ -232,13 +265,14 @@ public class ReportsController {
 
     @GetMapping("/download/{reportUid}")
     public ResponseEntity<byte[]> downloadFromS3(@PathVariable UUID reportUid) {
-        byte[] pdf = reportsService.downloadReportFromS3(reportUid);
+        ReportFileDTO file = reportsService.downloadReportFromS3(reportUid);
+        String filename = file.isExcel() ? "report.xlsx" : "report.pdf";
         return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
+            .contentType(MediaType.parseMediaType(file.getContentType()))
             .header(
                 HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"report.pdf\""
+                "attachment; filename=\"" + filename + "\""
             )
-            .body(pdf);
+            .body(file.getBytes());
     }
 }

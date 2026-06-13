@@ -1,5 +1,6 @@
 package ru.rtc.warehouse.reports.service;
 
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,8 +10,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -39,13 +38,29 @@ public class ReportsS3Service {
         return key;
     }
 
-    public ByteArrayResource downloadPdf(String s3Key) {
-        byte[] bytes = s3Client.getObjectAsBytes(
-            GetObjectRequest.builder()
+    public String uploadExcel(byte[] excelBytes) {
+        String uid = UUID.randomUUID().toString();
+        String key = REPORTS_DIRECTORY + "/" + uid + ".xlsx";
+        s3Client.putObject(
+            PutObjectRequest.builder()
                 .bucket(bucket)
-                .key(s3Key)
-                .build()
-        ).asByteArray();
+                .key(key)
+                .contentType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                .build(),
+            RequestBody.fromBytes(excelBytes)
+        );
+        log.info("Uploaded report Excel: {}", key);
+        return key;
+    }
+
+    public ByteArrayResource downloadPdf(String s3Key) {
+        byte[] bytes = s3Client
+            .getObjectAsBytes(
+                GetObjectRequest.builder().bucket(bucket).key(s3Key).build()
+            )
+            .asByteArray();
         return new ByteArrayResource(bytes);
     }
 }

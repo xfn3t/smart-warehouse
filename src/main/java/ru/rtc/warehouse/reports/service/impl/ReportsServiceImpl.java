@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.reports.dto.*;
 import ru.rtc.warehouse.reports.dto.robot.RobotActivityReportDTO;
+import ru.rtc.warehouse.reports.excel.ExcelReportGenerator;
 import ru.rtc.warehouse.reports.model.ReportMetadata;
 import ru.rtc.warehouse.reports.pdf.PdfReportGenerator;
 import ru.rtc.warehouse.reports.repository.ReportMetadataRepository;
@@ -33,6 +34,7 @@ public class ReportsServiceImpl implements ReportsService {
 
     private final ReportsJdbcRepository reportsJdbcRepository;
     private final PdfReportGenerator pdfReportGenerator;
+    private final ExcelReportGenerator excelReportGenerator;
     private final ReportsS3Service reportsS3Service;
     private final ReportMetadataRepository reportMetadataRepository;
     private final WarehouseEntityService warehouseEntityService;
@@ -241,6 +243,76 @@ public class ReportsServiceImpl implements ReportsService {
     }
 
     @Override
+    @Transactional
+    public ReportResponseDTO generateExcelReport(
+        String warehouseCode,
+        UserDetailsImpl principal
+    ) {
+        Long userId = principal.getUser().getId();
+        log.info(
+            "Generating Excel report for warehouse {} by user {}",
+            warehouseCode,
+            userId
+        );
+        WarehouseReportDTO report = getFullWarehouseReport(warehouseCode);
+        byte[] excel = excelReportGenerator.generateFullWarehouseReport(report);
+        String s3Key = reportsS3Service.uploadExcel(excel);
+        ReportMetadata meta = saveMetadata(
+            userId,
+            warehouseCode,
+            s3Key,
+            "FULL_WAREHOUSE_EXCEL",
+            null
+        );
+        return toExcelResponseDto(meta, excel);
+    }
+
+    @Override
+    @Transactional
+    public ReportResponseDTO generateExcelReportForSkus(
+        String warehouseCode,
+        List<String> skuCodes,
+        UserDetailsImpl principal
+    ) {
+        Long userId = principal.getUser().getId();
+        log.info(
+            "Generating Excel report for warehouse {} with {} SKUs by user {}",
+            warehouseCode,
+            skuCodes.size(),
+            userId
+        );
+
+        WarehouseReportDTO report = new WarehouseReportDTO();
+        report.setReportCreatedAt(LocalDateTime.now());
+        report.setSummary(
+            reportsJdbcRepository.getWarehouseSummary(warehouseCode)
+        );
+
+        List<ProductReportDTO> products = skuCodes
+            .stream()
+            .map(sku ->
+                reportsJdbcRepository.getProductReportBySku(warehouseCode, sku)
+            )
+            .filter(p -> p != null)
+            .collect(Collectors.toList());
+        report.setProducts(products);
+
+        byte[] excel = excelReportGenerator.generateSkusOnlyReport(
+            report,
+            products
+        );
+        String s3Key = reportsS3Service.uploadExcel(excel);
+        ReportMetadata meta = saveMetadata(
+            userId,
+            warehouseCode,
+            s3Key,
+            "BY_SKUS_EXCEL",
+            skuCodes
+        );
+        return toExcelResponseDto(meta, excel);
+    }
+
+    @Override
     public List<ReportMetadataDTO> getUserReports(Long userId) {
         log.info("Getting reports for user: {}", userId);
         return reportMetadataRepository
@@ -268,13 +340,21 @@ public class ReportsServiceImpl implements ReportsService {
     }
 
     @Override
-    public byte[] downloadReportFromS3(UUID reportUid) {
+    public ReportFileDTO downloadReportFromS3(UUID reportUid) {
         ReportMetadata meta = reportMetadataRepository
             .findByReportUidAndIsDeletedFalse(reportUid)
             .orElseThrow(() ->
                 new RuntimeException("Report not found: " + reportUid)
             );
-        return reportsS3Service.downloadPdf(meta.getS3Key()).getByteArray();
+        byte[] bytes = reportsS3Service
+            .downloadPdf(meta.getS3Key())
+            .getByteArray();
+        String contentType =
+            meta.getReportType() != null &&
+            meta.getReportType().contains("EXCEL")
+                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                : "application/pdf";
+        return new ReportFileDTO(bytes, contentType, meta.getReportType());
     }
 
     private ReportMetadata saveMetadata(
@@ -316,6 +396,22 @@ public class ReportsServiceImpl implements ReportsService {
         dto.setCreatedAt(meta.getCreatedAt());
         dto.setDownloadUrl("/api/reports/download/" + meta.getReportUid());
         dto.setPdfBase64(Base64.getEncoder().encodeToString(pdf));
+        return dto;
+    }
+
+    private ReportResponseDTO toExcelResponseDto(
+        ReportMetadata meta,
+        byte[] excel
+    ) {
+        ReportResponseDTO dto = new ReportResponseDTO();
+        dto.setReportUid(meta.getReportUid());
+        dto.setWarehouseCode(meta.getWarehouse().getCode());
+        dto.setWarehouseName(meta.getWarehouse().getName());
+        dto.setReportType(meta.getReportType());
+        dto.setSkuCodes(meta.getSkuCodes());
+        dto.setCreatedAt(meta.getCreatedAt());
+        dto.setDownloadUrl("/api/reports/download/" + meta.getReportUid());
+        dto.setPdfBase64(Base64.getEncoder().encodeToString(excel));
         return dto;
     }
 

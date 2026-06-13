@@ -1,5 +1,11 @@
 package ru.rtc.warehouse.reports.repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -7,13 +13,6 @@ import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.reports.dto.*;
 import ru.rtc.warehouse.reports.dto.robot.RobotActivityReportDTO;
 import ru.rtc.warehouse.reports.mapper.*;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
 
 @Slf4j
 @Repository
@@ -138,6 +137,37 @@ public class ReportsJdbcRepository {
             ORDER BY COALESCE(difference, 0) DESC
             """;
         return jdbcTemplate.query(sql, productReportRowMapper, warehouseCode);
+    }
+
+    public ProductReportDTO getProductReportBySku(
+        String warehouseCode,
+        String skuCode
+    ) {
+        String sql = """
+            SELECT
+                product_id,
+                sku_code,
+                product_name,
+                category,
+                warehouse_code,
+                warehouse_name,
+                min_stock,
+                optimal_stock,
+                current_quantity,
+                expected_quantity,
+                difference,
+                inventory_status,
+                last_scanned_at
+            FROM v_product_report
+            WHERE warehouse_code = ? AND sku_code = ?
+            """;
+        List<ProductReportDTO> result = jdbcTemplate.query(
+            sql,
+            productReportRowMapper,
+            warehouseCode,
+            skuCode
+        );
+        return result.isEmpty() ? null : result.get(0);
     }
 
     public List<ProductReportDTO> getProductReportByCategory(
