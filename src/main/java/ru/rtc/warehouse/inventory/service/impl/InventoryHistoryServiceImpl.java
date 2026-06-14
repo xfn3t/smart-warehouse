@@ -70,11 +70,9 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
             productAdapter.findByCode(productCode)
         );
         if (quantity != null) inventoryHistory.setQuantity(quantity);
-        if (zone != null) inventoryHistory.getLocation().setZone(zone);
-        if (rowNumber != null) inventoryHistory.getLocation().setRow(rowNumber);
-        if (shelfNumber != null) inventoryHistory
-            .getLocation()
-            .setShelf(shelfNumber);
+        if (zone != null) inventoryHistory.setZone(zone);
+        if (rowNumber != null) inventoryHistory.setRow(rowNumber);
+        if (shelfNumber != null) inventoryHistory.setShelf(shelfNumber);
         if (status != null) inventoryHistory.setStatus(ihss.findByCode(status));
         if (scannedAt != null) inventoryHistory.setScannedAt(scannedAt);
 

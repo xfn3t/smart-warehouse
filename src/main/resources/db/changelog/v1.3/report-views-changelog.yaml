@@ -211,9 +211,10 @@ databaseChangeLog:
       id: v1.3-create-report-metadata
       author: dev
       preConditions:
-        - not:
-            tableExists:
-              tableName: report_metadata
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'report_metadata'
       changes:
         - createTable:
             tableName: report_metadata

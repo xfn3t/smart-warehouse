@@ -5,13 +5,11 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.controller.dto.request.ExcludedCellDTO;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseCreateRequest;
 import ru.rtc.warehouse.warehouse.controller.dto.request.WarehouseUpdateRequest;
 import ru.rtc.warehouse.warehouse.mapper.WarehouseMapper;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
-import ru.rtc.warehouse.warehouse.service.LocationServiceAdapter;
 import ru.rtc.warehouse.warehouse.service.UserServiceAdapter;
 import ru.rtc.warehouse.warehouse.service.WarehouseEntityService;
 import ru.rtc.warehouse.warehouse.service.WarehouseService;
@@ -23,7 +21,6 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final LocationServiceAdapter locationServiceAdapter;
     private final UserServiceAdapter userServiceAdapter;
     private final WarehouseMapper warehouseMapper;
     private final WarehouseEntityService warehouseEntityService;
@@ -42,16 +39,6 @@ public class WarehouseServiceImpl implements WarehouseService {
         );
 
         Warehouse savedWarehouse = warehouseEntityService.save(warehouse);
-
-        savedWarehouse.setLocations(
-            new HashSet<>(
-                locationServiceAdapter.generateLocationForWarehouse(
-                    savedWarehouse,
-                    createRequest.getExcludedCells()
-                )
-            )
-        );
-
         warehouseEntityService.save(savedWarehouse);
     }
 
@@ -74,9 +61,6 @@ public class WarehouseServiceImpl implements WarehouseService {
         WarehouseUpdateRequest updateRequest,
         Warehouse warehouse
     ) {
-        boolean dimensionsChanged = false;
-        boolean exclusionsChanged = false;
-
         if (updateRequest.getCode() != null) warehouse.setCode(
             updateRequest.getCode()
         );
@@ -89,21 +73,18 @@ public class WarehouseServiceImpl implements WarehouseService {
             !updateRequest.getZoneMaxSize().equals(warehouse.getZoneMaxSize())
         ) {
             warehouse.setZoneMaxSize(updateRequest.getZoneMaxSize());
-            dimensionsChanged = true;
         }
         if (
             updateRequest.getRowMaxSize() != null &&
             !updateRequest.getRowMaxSize().equals(warehouse.getRowMaxSize())
         ) {
             warehouse.setRowMaxSize(updateRequest.getRowMaxSize());
-            dimensionsChanged = true;
         }
         if (
             updateRequest.getShelfMaxSize() != null &&
             !updateRequest.getShelfMaxSize().equals(warehouse.getShelfMaxSize())
         ) {
             warehouse.setShelfMaxSize(updateRequest.getShelfMaxSize());
-            dimensionsChanged = true;
         }
         if (updateRequest.getLocation() != null) warehouse.setWarehouseLocation(
             updateRequest.getLocation()
@@ -113,20 +94,6 @@ public class WarehouseServiceImpl implements WarehouseService {
         List<ExcludedCellDTO> newExclusions = updateRequest.getExcludedCells();
         if (newExclusions != null) {
             warehouse.setExcludedCellsJson(cellsToMap(newExclusions));
-            exclusionsChanged = true;
-        }
-
-        List<ExcludedCellDTO> effectiveExclusions = mapToCells(
-            warehouse.getExcludedCellsJson()
-        );
-
-        if (dimensionsChanged || exclusionsChanged) {
-            List<Location> updatedLocations =
-                locationServiceAdapter.generateLocationForWarehouse(
-                    warehouse,
-                    effectiveExclusions
-                );
-            warehouse.setLocations(new HashSet<>(updatedLocations));
         }
 
         warehouseEntityService.update(warehouse);
