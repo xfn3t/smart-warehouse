@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-ensure-robots-location-id
+      author: dev
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: robots
+            columnName: location_id
+      changes:
+        - addColumn:
+            tableName: robots
+            columns:
+              - column:
+                  name: location_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: robots
+            baseColumnNames: location_id
+            constraintName: fk_robot_location
+            referencedTableName: location
+            referencedColumnNames: id
+            onDelete: SET NULL

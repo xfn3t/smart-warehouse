@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: v1.3.5/fix-robots-location-id.yaml
+      relativeToChangelogFile: true
