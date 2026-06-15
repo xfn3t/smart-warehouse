@@ -9,18 +9,25 @@ import ru.rtc.warehouse.product.service.ProductEntityService;
 @RequiredArgsConstructor
 public class IHProductEntServiceAdapter {
 
-	private final ProductEntityService productEntityService;
+    private final ProductEntityService productEntityService;
 
-	public Product findByCode(String code) {
-		return productEntityService.findBySkuCode(code);
-	}
+    public Product findByUserIdAndSkuCode(Long userId, String code) {
+        return productEntityService.findByUserIdAndSkuCode(userId, code);
+    }
 
-	public Product save(Product product) {
-		return productEntityService.save(product);
-	}
+    /**
+     * Поиск продукта по SKU (глобальный, без userId).
+     * Используется в MapStruct-мапперах, где нет контекста пользователя.
+     */
+    public Product findByCode(String code) {
+        return productEntityService.findBySkuCode(code);
+    }
 
-	public Product findByNameAndCategory(String name, String category) {
-		return productEntityService.findByNameAndCategory(name, category);
-	}
+    public Product save(Product product) {
+        return productEntityService.save(product);
+    }
 
+    public Product findByNameAndCategory(String name, String category) {
+        return productEntityService.findByNameAndCategory(name, category);
+    }
 }

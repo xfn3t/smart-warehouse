@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: v1.4/add-user-id-to-products.yaml
+      relativeToChangelogFile: true

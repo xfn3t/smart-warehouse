@@ -5,9 +5,15 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
+import ru.rtc.warehouse.user.model.User;
 
 @Entity
-@Table(name = "products")
+@Table(
+    name = "products",
+    uniqueConstraints = @UniqueConstraint(
+        columnNames = { "user_id", "sku_code" }
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,7 +25,11 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "sku_code", unique = true, nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "sku_code", nullable = false)
     private String skuCode;
 
     @Column(name = "name", nullable = false)

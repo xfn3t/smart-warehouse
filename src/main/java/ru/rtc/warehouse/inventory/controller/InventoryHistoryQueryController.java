@@ -1,7 +1,10 @@
 package ru.rtc.warehouse.inventory.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
-
+import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,11 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryPageRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
@@ -80,13 +78,27 @@ public class InventoryHistoryQueryController {
         @RequestParam(required = false) String from,
         @RequestParam(required = false) String to
     ) {
+        if ("full".equalsIgnoreCase(aggregation)) {
+            return ResponseEntity.ok(
+                ihs.findFullHistory(warehouseCode, productCodes, from, to)
+            );
+        }
         if (aggregation != null && !aggregation.isBlank()) {
             return ResponseEntity.ok(
-                ihs.findSmoothed(warehouseCode, productCodes, aggregation, from, to)
+                ihs.findSmoothed(
+                    warehouseCode,
+                    productCodes,
+                    aggregation,
+                    from,
+                    to
+                )
             );
         }
         return ResponseEntity.ok(
-            ihs.findAllByWarehouseCodeAndProductCodes(warehouseCode, productCodes)
+            ihs.findAllByWarehouseCodeAndProductCodes(
+                warehouseCode,
+                productCodes
+            )
         );
     }
 

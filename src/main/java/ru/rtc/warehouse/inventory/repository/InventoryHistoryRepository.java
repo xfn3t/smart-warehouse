@@ -414,4 +414,30 @@ public interface InventoryHistoryRepository
         @Param("from") String from,
         @Param("to") String to
     );
+
+    @Query(
+        value = """
+            SELECT
+                p.sku_code AS skuCode,
+                p.name AS productName,
+                ih.scanned_at AS scannedAt,
+                ih.quantity AS quantity
+            FROM inventory_history ih
+            JOIN products p ON p.id = ih.product_id
+            JOIN warehouses w ON w.id = ih.warehouse_id
+            WHERE w.code = :warehouseCode
+              AND p.sku_code IN (:productCodes)
+              AND ih.is_deleted = FALSE
+              AND (:from IS NULL OR ih.scanned_at >= CAST(:from AS TIMESTAMP))
+              AND (:to IS NULL OR ih.scanned_at <= CAST(:to AS TIMESTAMP))
+            ORDER BY p.sku_code, ih.scanned_at ASC
+        """,
+        nativeQuery = true
+    )
+    List<Object[]> findFullHistoryByWarehouseAndSkus(
+        @Param("warehouseCode") String warehouseCode,
+        @Param("productCodes") List<String> productCodes,
+        @Param("from") String from,
+        @Param("to") String to
+    );
 }

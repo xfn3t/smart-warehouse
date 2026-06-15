@@ -42,6 +42,14 @@ public class ProductEntityServiceImpl implements ProductEntityService {
     }
 
     @Override
+    public Product findByUserIdAndSkuCode(Long userId, String code) {
+        return productRepository
+            .findByUserIdAndSkuCodeAndIsDeletedFalse(userId, code)
+            .orElseThrow(() -> new NotFoundException("Product not found"));
+    }
+
+    @Override
+    @Deprecated
     public Product findBySkuCode(String code) {
         return productRepository
             .findBySkuCodeAndIsDeletedFalse(code)
@@ -51,6 +59,11 @@ public class ProductEntityServiceImpl implements ProductEntityService {
     @Override
     public List<Product> findAllActiveProducts() {
         return productRepository.findAllActiveProducts();
+    }
+
+    @Override
+    public List<Product> findAllActiveProductsByUserId(Long userId) {
+        return productRepository.findAllActiveProductsByUserId(userId);
     }
 
     @Override

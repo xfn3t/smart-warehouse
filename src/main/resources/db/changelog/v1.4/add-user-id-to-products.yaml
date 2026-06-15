@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-add-user-id-to-products
+      author: dev
+      preConditions:
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: products
+            columnName: user_id
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+        - sql:
+            sql: >
+              UPDATE products
+              SET user_id = (SELECT id FROM users WHERE is_deleted = false ORDER BY id LIMIT 1)
+              WHERE user_id IS NULL
+        - dropUniqueConstraint:
+            tableName: products
+            constraintName: products_sku_code_key
+        - addNotNullConstraint:
+            tableName: products
+            columnName: user_id
+            columnDataType: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: products
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_products_user
+        - addUniqueConstraint:
+            tableName: products
+            columnNames: user_id, sku_code
+            constraintName: uq_products_user_sku
