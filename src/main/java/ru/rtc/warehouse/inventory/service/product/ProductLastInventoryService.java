@@ -5,7 +5,9 @@ import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySea
 import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryPageDTO;
 
 public interface ProductLastInventoryService {
-	ProductLastInventoryPageDTO getLastInventoryByWarehouse(String warehouseCode,
-															ProductLastInventorySearchRequest searchRequest,
-															Pageable pageable);
+    ProductLastInventoryPageDTO getLastInventoryByWarehouse(
+        String warehouseCode,
+        ProductLastInventorySearchRequest searchRequest,
+        Pageable pageable
+    );
 }

@@ -1,5 +1,9 @@
 package ru.rtc.warehouse.inventory.service.product.impl;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -11,11 +15,6 @@ import ru.rtc.warehouse.inventory.controller.dto.request.ProductLastInventorySea
 import ru.rtc.warehouse.inventory.service.product.ProductLastInventoryService;
 import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryDTO;
 import ru.rtc.warehouse.inventory.service.product.dto.ProductLastInventoryPageDTO;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -112,7 +111,10 @@ public class ProductLastInventoryServiceImpl
                 ih.difference AS difference,
                 ih.scanned_at AS lastScannedAt,
                 ist.code AS statusCode,
-                r.robot_code AS robotCode
+                r.robot_code AS robotCode,
+                ih.zone AS zone,
+                ih.row AS row,
+                ih.shelf AS shelf
             FROM inventory_history ih
             JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
             JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
@@ -182,6 +184,9 @@ public class ProductLastInventoryServiceImpl
         dto.setLastScannedAt(ts != null ? ts.toLocalDateTime() : null);
         dto.setStatusCode(rs.getString("statusCode"));
         dto.setRobotCode(rs.getString("robotCode"));
+        dto.setZone(rs.getInt("zone"));
+        dto.setRow(rs.getInt("row"));
+        dto.setShelf(rs.getInt("shelf"));
         return dto;
     }
 }
