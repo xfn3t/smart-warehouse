@@ -78,6 +78,11 @@ public class InventoryHistoryQueryController {
         @RequestParam(required = false) String from,
         @RequestParam(required = false) String to
     ) {
+        if ("full".equalsIgnoreCase(aggregation)) {
+            return ResponseEntity.ok(
+                ihs.findFullHistory(warehouseCode, productCodes, from, to)
+            );
+        }
         if (aggregation != null && !aggregation.isBlank()) {
             return ResponseEntity.ok(
                 ihs.findSmoothed(

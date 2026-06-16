@@ -2,6 +2,7 @@ package ru.rtc.warehouse.product.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,8 @@ import ru.rtc.warehouse.product.service.ProductService;
 import ru.rtc.warehouse.product.service.ProductWarehouseEntityService;
 import ru.rtc.warehouse.product.service.dto.ProductDTO;
 import ru.rtc.warehouse.product.service.dto.ProductWarehouseDTO;
+import ru.rtc.warehouse.user.model.User;
+import ru.rtc.warehouse.user.service.UserEntityService;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 import ru.rtc.warehouse.warehouse.service.WarehouseEntityService;
 
@@ -28,6 +31,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductWarehouseEntityService productWarehouseEntityService;
     private final ProductMapper productMapper;
     private final ProductWarehouseMapper productWarehouseMapper;
+    private final UserEntityService userEntityService;
 
     @Override
     @Transactional
@@ -35,12 +39,16 @@ public class ProductServiceImpl implements ProductService {
         String warehouseCode,
         ProductCreateRequest productCreateRequest
     ) {
+        // Получаем текущего пользователя
+        User currentUser = userEntityService.getCurrentUser();
+
         // Генерируем SKU код
         String skuCode = generateSkuCode();
 
         // Создаем продукт
         Product product = productMapper.toEntity(productCreateRequest);
         product.setSkuCode(skuCode);
+        product.setUser(currentUser);
         Product savedProduct = productEntityService.save(product);
 
         // Находим склад
@@ -67,7 +75,11 @@ public class ProductServiceImpl implements ProductService {
         ProductUpdateRequest updateRequest,
         String productCode
     ) {
-        Product product = productEntityService.findBySkuCode(productCode);
+        User currentUser = userEntityService.getCurrentUser();
+        Product product = productEntityService.findByUserIdAndSkuCode(
+            currentUser.getId(),
+            productCode
+        );
 
         if (updateRequest.getName() != null) product.setName(
             updateRequest.getName()
@@ -85,7 +97,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO findByCode(String productCode) {
-        Product product = productEntityService.findBySkuCode(productCode);
+        User currentUser = userEntityService.getCurrentUser();
+        Product product = productEntityService.findByUserIdAndSkuCode(
+            currentUser.getId(),
+            productCode
+        );
         return enrichProductWithWarehouseInfo(product);
     }
 
@@ -101,7 +117,11 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void delete(String productCode) {
-        Product product = productEntityService.findBySkuCode(productCode);
+        User currentUser = userEntityService.getCurrentUser();
+        Product product = productEntityService.findByUserIdAndSkuCode(
+            currentUser.getId(),
+            productCode
+        );
         product.setIsDeleted(true);
         productEntityService.update(product);
     }
@@ -121,9 +141,12 @@ public class ProductServiceImpl implements ProductService {
         return productDTO;
     }
 
-    private String generateSkuCode() {
-        // Генерируем SKU-0001, SKU-0002 и т.д.
-        Long productCount = productEntityService.count();
-        return String.format("SKU-%04d", productCount + 1);
+    public static String generateSkuCode() {
+        // Генерируем SKU на основе UUID, 10 символов
+        return UUID.randomUUID()
+            .toString()
+            .replace("-", "")
+            .substring(0, 10)
+            .toUpperCase();
     }
 }

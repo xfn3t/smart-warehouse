@@ -1,0 +1,6 @@
+skuCode;name;category;location;quantity;minStock;optimalStock
+ELEC-001;;;1-1-3;10;;
+ELEC-001;Чехол для телефона;Electronics;1-2-3;50;10;30
+;Клавиатура механическая;Electronics;1-3-3;35;8;25
+OFFC-003;Ежедневник A5;Office;2-1-3;200;30;150
+OFFC-003;Ручка гелевая;Office;2-2-3;300;50;200

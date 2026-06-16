@@ -350,4 +350,76 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
             })
             .collect(Collectors.toList());
     }
+
+    @Override
+    public List<InventoryHistorySmoothedDTO> findFullHistory(
+        String warehouseCode,
+        List<String> productCodes,
+        String from,
+        String to
+    ) {
+        List<Object[]> rows =
+            inventoryHistoryRepository.findFullHistoryByWarehouseAndSkus(
+                warehouseCode,
+                productCodes,
+                from,
+                to
+            );
+
+        Map<String, List<Object[]>> grouped = rows
+            .stream()
+            .collect(Collectors.groupingBy(r -> (String) r[0]));
+
+        Map<String, Integer> currentQtyMap = new HashMap<>();
+        if (!grouped.isEmpty()) {
+            jdbcTemplate.query(
+                """
+                SELECT DISTINCT ON (p.sku_code)
+                    p.sku_code, ih.quantity
+                FROM inventory_history ih
+                JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
+                JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
+                WHERE w.code = ?
+                  AND p.sku_code = ANY(?)
+                  AND ih.is_deleted = false
+                ORDER BY p.sku_code, ih.scanned_at DESC
+                """,
+                (rs, rowNum) ->
+                    currentQtyMap.put(
+                        rs.getString("sku_code"),
+                        rs.getInt("quantity")
+                    ),
+                warehouseCode,
+                grouped.keySet().toArray(new String[0])
+            );
+        }
+
+        return grouped
+            .entrySet()
+            .stream()
+            .map(entry -> {
+                InventoryHistorySmoothedDTO dto =
+                    new InventoryHistorySmoothedDTO();
+                dto.setSkuCode(entry.getKey());
+                Product product = productAdapter.findByCode(entry.getKey());
+                dto.setProduct(productMapper.toDto(product));
+                dto.setCurrentQuantity(currentQtyMap.get(entry.getKey()));
+                dto.setDataPoints(
+                    entry
+                        .getValue()
+                        .stream()
+                        .map(r -> {
+                            java.sql.Timestamp ts = (java.sql.Timestamp) r[2];
+                            Integer qty = ((Number) r[3]).intValue();
+                            return InventoryHistorySmoothedDTO.DataPoint.builder()
+                                .timestamp(ts.toInstant().toString())
+                                .quantity(qty)
+                                .build();
+                        })
+                        .collect(Collectors.toList())
+                );
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
 }
