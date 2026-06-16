@@ -1,6 +1,10 @@
 package ru.rtc.warehouse.inventory.repository;
 
 import io.micrometer.common.lang.Nullable;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,11 +18,6 @@ import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface InventoryHistoryRepository
@@ -449,28 +448,36 @@ public interface InventoryHistoryRepository
     );
 
     @Query(
-            value = """
-                SELECT
-                    p.sku_code AS skuCode,
-                    p.name AS productName,
-                    ih.scanned_at AS scannedAt,
-                    ih.quantity AS quantity
-                FROM inventory_history ih
-                JOIN products p ON p.id = ih.product_id
-                JOIN warehouses w ON w.id = ih.warehouse_id
-                WHERE w.code = :warehouseCode
-                  AND p.sku_code IN (:productCodes)
-                  AND ih.is_deleted = FALSE
-                  AND (:from IS NULL OR ih.scanned_at >= CAST(:from AS TIMESTAMP))
-                  AND (:to IS NULL OR ih.scanned_at <= CAST(:to AS TIMESTAMP))
-                ORDER BY p.sku_code, ih.scanned_at ASC
-            """,
-            nativeQuery = true
-        )
-        List<Object[]> findFullHistoryByWarehouseAndSkus(
-            @Param("warehouseCode") String warehouseCode,
-            @Param("productCodes") List<String> productCodes,
-            @Param("from") String from,
-            @Param("to") String to
-        );
+        value = """
+            SELECT
+                p.sku_code AS skuCode,
+                p.name AS productName,
+                ih.scanned_at AS scannedAt,
+                ih.quantity AS quantity
+            FROM inventory_history ih
+            JOIN products p ON p.id = ih.product_id
+            JOIN warehouses w ON w.id = ih.warehouse_id
+            WHERE w.code = :warehouseCode
+              AND p.sku_code IN (:productCodes)
+              AND ih.is_deleted = FALSE
+              AND (:from IS NULL OR ih.scanned_at >= CAST(:from AS TIMESTAMP))
+              AND (:to IS NULL OR ih.scanned_at <= CAST(:to AS TIMESTAMP))
+            ORDER BY p.sku_code, ih.scanned_at ASC
+        """,
+        nativeQuery = true
+    )
+    List<Object[]> findFullHistoryByWarehouseAndSkus(
+        @Param("warehouseCode") String warehouseCode,
+        @Param("productCodes") List<String> productCodes,
+        @Param("from") String from,
+        @Param("to") String to
+    );
+
+    @Query(
+        "SELECT COUNT(DISTINCT CONCAT(ih.zone, '-', ih.row, '-', ih.shelf)) " +
+            "FROM InventoryHistory ih WHERE ih.warehouse = :warehouse AND ih.isDeleted = false"
+    )
+    long countDistinctZoneRowShelfByWarehouse(
+        @Param("warehouse") Warehouse warehouse
+    );
 }

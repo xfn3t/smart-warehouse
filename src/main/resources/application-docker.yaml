@@ -46,5 +46,5 @@ logging:
   level:
     ru.rtc.warehouse: debug
     org.springframework.web: info
-#    org.hibernate.SQL: debug
-#    org.hibernate.orm.jdbc.bind: trace
+    # org.hibernate.SQL: debug
+    # org.hibernate.orm.jdbc.bind: trace
