@@ -77,3 +77,6 @@ databaseChangeLog:
   - include:
       file: v1.3.5/fix-robots-location-id.yaml
       relativeToChangelogFile: true
+  - include:
+      file: v1.4/remove-location-table.yaml
+      relativeToChangelogFile: true

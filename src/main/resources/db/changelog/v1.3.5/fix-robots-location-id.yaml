@@ -15,10 +15,3 @@ databaseChangeLog:
               - column:
                   name: location_id
                   type: BIGINT
-        - addForeignKeyConstraint:
-            baseTableName: robots
-            baseColumnNames: location_id
-            constraintName: fk_robot_location
-            referencedTableName: location
-            referencedColumnNames: id
-            onDelete: SET NULL

@@ -1,0 +1,108 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-add-zone-row-shelf-to-inventory-history
+      author: migration
+      comment: Add zone, row, shelf columns to inventory_history and migrate data from location
+      changes:
+        - addColumn:
+            tableName: inventory_history
+            columns:
+              - column:
+                  name: zone
+                  type: integer
+              - column:
+                  name: row
+                  type: integer
+              - column:
+                  name: shelf
+                  type: integer
+
+        - sql:
+            comment: Copy zone/row/shelf from location table
+            sql: >
+              UPDATE inventory_history ih
+              SET zone = l.zone, row = l.row, shelf = l.shelf
+              FROM location l
+              WHERE ih.location_id = l.id
+
+        - addNotNullConstraint:
+            tableName: inventory_history
+            columnName: zone
+
+        - addNotNullConstraint:
+            tableName: inventory_history
+            columnName: row
+
+        - addNotNullConstraint:
+            tableName: inventory_history
+            columnName: shelf
+
+        - dropForeignKeyConstraint:
+            baseTableName: inventory_history
+            constraintName: fk_inventory_location
+
+        - dropColumn:
+            tableName: inventory_history
+            columnName: location_id
+
+  - changeSet:
+      id: v1.4-add-zone-row-shelf-to-robots
+      author: migration
+      comment: Add current_zone, current_row, current_shelf columns to robots and migrate data
+      changes:
+        - addColumn:
+            tableName: robots
+            columns:
+              - column:
+                  name: current_zone
+                  type: integer
+              - column:
+                  name: current_row
+                  type: integer
+              - column:
+                  name: current_shelf
+                  type: integer
+
+        - sql:
+            comment: Copy zone/row/shelf from location table
+            sql: >
+              UPDATE robots r
+              SET current_zone = l.zone, current_row = l.row, current_shelf = l.shelf
+              FROM location l
+              WHERE r.location_id = l.id
+
+        - dropForeignKeyConstraint:
+            baseTableName: robots
+            constraintName: fk_robot_location
+
+        - dropColumn:
+            tableName: robots
+            columnName: location_id
+
+  - changeSet:
+      id: v1.4-add-index-inventory-history-zone-row-shelf
+      author: migration
+      comment: Index for location search in inventory_history
+      changes:
+        - createIndex:
+            tableName: inventory_history
+            indexName: idx_inventory_history_location
+            columns:
+              - column:
+                  name: warehouse_id
+              - column:
+                  name: zone
+              - column:
+                  name: row
+              - column:
+                  name: shelf
+
+  - changeSet:
+      id: v1.4-drop-location-and-location-status-tables
+      author: migration
+      comment: Drop location and location_status tables
+      changes:
+        - dropTable:
+            tableName: location
+        - dropTable:
+            tableName: location_status

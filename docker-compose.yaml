@@ -89,7 +89,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
-      API_URL: http://app:8080
+      API_URL: http://localhost:8080
 
       MODE: live
       ROBOTS_COUNT: ${ROBOTS_COUNT:-4}

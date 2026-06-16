@@ -1,16 +1,12 @@
 package ru.rtc.warehouse.inventory.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.*;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-
 
 @Entity
 @Table(name = "inventory_history")
@@ -21,52 +17,57 @@ import java.util.UUID;
 @Builder
 public class InventoryHistory {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(name = "message_id")
-	private UUID messageId;
+    @Column(name = "message_id")
+    private UUID messageId;
 
-	@PrePersist
-	void ensureMessageId() {
-		if (messageId == null) {
-			messageId = UUID.randomUUID();
-		}
-	}
+    @PrePersist
+    void ensureMessageId() {
+        if (messageId == null) {
+            messageId = UUID.randomUUID();
+        }
+    }
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "warehouse_id", nullable = false)
-	private Warehouse warehouse;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id", nullable = false)
+    private Warehouse warehouse;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "robot_id")
-	private Robot robot;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "robot_id")
+    private Robot robot;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "product_id")
-	private Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "location_id", nullable = false)
-	private Location location;
+    @Column(name = "zone", nullable = false)
+    private Integer zone;
 
-	private Integer expectedQuantity;
-	private Integer quantity;
-	private Integer difference;
+    @Column(name = "row", nullable = false)
+    private Integer row;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "status_id", nullable = false)
-	private InventoryHistoryStatus status;
+    @Column(name = "shelf", nullable = false)
+    private Integer shelf;
 
-	@Column(name = "scanned_at", nullable = false)
-	private LocalDateTime scannedAt;
+    private Integer expectedQuantity;
+    private Integer quantity;
+    private Integer difference;
 
-	@Builder.Default
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt = LocalDateTime.now();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    private InventoryHistoryStatus status;
 
-	@Builder.Default
-	@Column(name = "is_deleted", nullable = false)
-	private boolean isDeleted = false;
+    @Column(name = "scanned_at", nullable = false)
+    private LocalDateTime scannedAt;
+
+    @Builder.Default
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 }

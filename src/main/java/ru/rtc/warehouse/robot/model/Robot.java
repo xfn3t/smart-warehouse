@@ -3,7 +3,6 @@ package ru.rtc.warehouse.robot.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 @Entity
@@ -36,9 +35,14 @@ public class Robot {
     @Column(name = "last_update")
     private LocalDateTime lastUpdate;
 
-    @OneToOne
-    @JoinColumn(name = "location_id")
-    private Location location;
+    @Column(name = "current_zone")
+    private Integer currentZone;
+
+    @Column(name = "current_row")
+    private Integer currentRow;
+
+    @Column(name = "current_shelf")
+    private Integer currentShelf;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
