@@ -18,4 +18,7 @@ public class ProductLastInventoryDTO {
     private String statusCode;
     private String robotCode;
     private String imageUrl;
+    private Integer zone;
+    private Integer row;
+    private Integer shelf;
 }

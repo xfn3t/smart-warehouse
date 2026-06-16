@@ -18,11 +18,6 @@ import ru.rtc.warehouse.inventory.mapper.InventoryStatusReferenceMapper;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
-import ru.rtc.warehouse.location.dto.LocationDTO;
-import ru.rtc.warehouse.location.dto.LocationMetricsDTO;
-import ru.rtc.warehouse.location.model.Location;
-import ru.rtc.warehouse.location.service.LocationMetricsService;
-import ru.rtc.warehouse.location.service.publisher.LocationTelemetryPublisher;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.robot.controller.dto.ScanResultDTO;
 import ru.rtc.warehouse.robot.controller.dto.request.RobotDataRequest;
@@ -31,7 +26,6 @@ import ru.rtc.warehouse.robot.model.Robot;
 import ru.rtc.warehouse.robot.service.RobotDataService;
 import ru.rtc.warehouse.robot.service.RobotEntityService;
 import ru.rtc.warehouse.robot.service.adapter.InventoryHistoryAdapter;
-import ru.rtc.warehouse.robot.service.adapter.LocationAdapter;
 import ru.rtc.warehouse.robot.service.adapter.ProductAdapter;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
@@ -45,15 +39,11 @@ public class RobotDataServiceImpl implements RobotDataService {
     private final RobotEntityService robotEntityService;
     private final InventoryHistoryEntityService inventoryHistoryEntityService;
     private final InventoryHistoryAdapter inventoryHistoryAdapter;
-    private final LocationAdapter locationAdapter;
     private final ProductAdapter productAdapter;
 
     private final StringRedisTemplate redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
-
-    private final LocationMetricsService locationMetricsService;
-    private final LocationTelemetryPublisher locationTelemetryPublisher;
 
     private final InventoryStatusReferenceMapper inventoryStatusReferenceMapper;
 
@@ -74,25 +64,23 @@ public class RobotDataServiceImpl implements RobotDataService {
         );
         robot.setLastUpdate(scannedAt);
 
-        LocationDTO locDto = request.getLocation();
-        Location location =
-            locationAdapter.findByWarehouseAndZoneAndRowAndShelf(
-                robot.getWarehouse(),
-                locDto.getZone(),
-                locDto.getRow(),
-                locDto.getShelf()
-            );
-        robot.setLocation(location);
-
-        robotEntityService.saveAndFlush(robot);
-
         Warehouse robotWarehouse = robot.getWarehouse();
         if (robotWarehouse == null) {
             throw new NotFoundException(
                 "Robot is not assigned to any warehouse: " + robot.getCode()
             );
         }
-        validateLocationBounds(locDto, robotWarehouse);
+
+        Integer zone = request.getLocation().getZone();
+        Integer row = request.getLocation().getRow();
+        Integer shelf = request.getLocation().getShelf();
+        validateLocationBounds(zone, row, shelf, robotWarehouse);
+
+        robot.setCurrentZone(zone);
+        robot.setCurrentRow(row);
+        robot.setCurrentShelf(shelf);
+
+        robotEntityService.saveAndFlush(robot);
 
         List<UUID> messageIds = new ArrayList<>(
             request.getScanResults().size()
@@ -116,9 +104,11 @@ public class RobotDataServiceImpl implements RobotDataService {
             Optional<
                 ru.rtc.warehouse.inventory.model.InventoryHistory
             > lastOpt =
-                inventoryHistoryAdapter.findLatestByProductCodeAndLocationAndWarehouse(
+                inventoryHistoryAdapter.findLatestByProductCodeAndZoneAndRowAndShelfAndWarehouse(
                     productCode,
-                    location,
+                    zone,
+                    row,
+                    shelf,
                     robotWarehouse
                 );
             Integer previousQty = lastOpt
@@ -145,7 +135,9 @@ public class RobotDataServiceImpl implements RobotDataService {
             history.setRobot(robot);
             history.setProduct(product);
             history.setWarehouse(robotWarehouse);
-            history.setLocation(location);
+            history.setZone(zone);
+            history.setRow(row);
+            history.setShelf(shelf);
             history.setExpectedQuantity(expectedQty);
             history.setQuantity(quantity);
             history.setDifference(diff);
@@ -155,16 +147,18 @@ public class RobotDataServiceImpl implements RobotDataService {
 
             inventoryHistoryEntityService.save(history);
 
-            LocationMetricsDTO metrics = locationMetricsService.computeFor(
-                history.getLocation()
-            );
-            locationTelemetryPublisher.publish(metrics);
-
             Map<String, Object> scanMap = new HashMap<>();
             scanMap.put("productCode", productCode);
             scanMap.put("productName", productName);
             scanMap.put("quantity", quantity);
-            scanMap.put("status", status != null ? status.getCode() != null ? status.getCode().name() : null : null);
+            scanMap.put(
+                "status",
+                status != null
+                    ? status.getCode() != null
+                        ? status.getCode().name()
+                        : null
+                    : null
+            );
             scanMap.put("diff", diff);
             scanMap.put("scannedAt", scannedAt.toString());
             recentScansPayload.add(scanMap);
@@ -211,11 +205,14 @@ public class RobotDataServiceImpl implements RobotDataService {
         wsPayload.put("type", "robot_update");
         Map<String, Object> data = new HashMap<>();
         data.put("robot_id", robot.getCode());
-        data.put("warehouse_code", robot.getWarehouse() != null ? robot.getWarehouse().getCode() : null);
+        data.put(
+            "warehouse_code",
+            robot.getWarehouse() != null ? robot.getWarehouse().getCode() : null
+        );
         data.put("battery_level", robot.getBatteryLevel());
-        data.put("zone", robot.getLocation().getZone());
-        data.put("row", robot.getLocation().getRow());
-        data.put("shelf", robot.getLocation().getShelf());
+        data.put("zone", robot.getCurrentZone());
+        data.put("row", robot.getCurrentRow());
+        data.put("shelf", robot.getCurrentShelf());
         data.put("next_checkpoint", request.getNextCheckpoint());
         data.put("timestamp", scannedAt.toString());
         data.put(
@@ -260,34 +257,34 @@ public class RobotDataServiceImpl implements RobotDataService {
         return new RobotDataResponse("received", messageIds);
     }
 
-    private void validateLocationBounds(LocationDTO loc, Warehouse warehouse) {
-        Integer zoneInt = loc.getZone();
-        if (zoneInt < 0 || zoneInt > warehouse.getZoneMaxSize()) {
+    private void validateLocationBounds(
+        Integer zone,
+        Integer row,
+        Integer shelf,
+        Warehouse warehouse
+    ) {
+        if (zone < 0 || zone > warehouse.getZoneMaxSize()) {
             throw new IllegalArgumentException(
                 "Zone out of bounds for warehouse " +
                     warehouse.getCode() +
                     ". Allowed: 0.." +
                     warehouse.getZoneMaxSize() +
                     ", got: " +
-                    zoneInt
+                    zone
             );
         }
-        if (
-            loc.getRow() != null &&
-            (loc.getRow() < 0 || loc.getRow() > warehouse.getRowMaxSize())
-        ) {
+        if (row != null && (row < 0 || row > warehouse.getRowMaxSize())) {
             throw new IllegalArgumentException(
                 "Row out of bounds for warehouse " +
                     warehouse.getCode() +
                     ". Allowed: 0.." +
                     warehouse.getRowMaxSize() +
                     ", got: " +
-                    loc.getRow()
+                    row
             );
         }
         if (
-            loc.getShelf() != null &&
-            (loc.getShelf() < 0 || loc.getShelf() > warehouse.getShelfMaxSize())
+            shelf != null && (shelf < 0 || shelf > warehouse.getShelfMaxSize())
         ) {
             throw new IllegalArgumentException(
                 "Shelf out of bounds for warehouse " +
@@ -295,7 +292,7 @@ public class RobotDataServiceImpl implements RobotDataService {
                     ". Allowed: 0.." +
                     warehouse.getShelfMaxSize() +
                     ", got: " +
-                    loc.getShelf()
+                    shelf
             );
         }
     }

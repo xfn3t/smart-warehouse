@@ -16,12 +16,10 @@ import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryStatusService;
-import ru.rtc.warehouse.inventory.service.adapter.IHLocationEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.adapter.IHProductEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.csv.InventoryImportService;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.product.model.ProductWarehouse;
 import ru.rtc.warehouse.product.service.ProductWarehouseEntityService;
@@ -36,7 +34,6 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
 
     private final InventoryHistoryRepository inventoryHistoryRepository;
     private final IHWarehouseEntServiceAdapter warehouseService;
-    private final IHLocationEntServiceAdapter locationService;
     private final IHProductEntServiceAdapter productService;
     private final ProductWarehouseEntityService productWarehouseEntityService;
     private final InventoryHistoryStatusService inventoryHistoryStatusService;
@@ -103,36 +100,20 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         User user
     ) {
         validateInventoryRecord(record);
-
-        Location location = locationService.findByCoordinate(
+        validateLocationBounds(
             record.getZone(),
             record.getRow(),
             record.getShelf(),
-            warehouse.getId()
+            warehouse
         );
 
-        if (location == null) {
-            throw new InventoryImportException(
-                "Локация не найдена: зона=" +
-                    record.getZone() +
-                    ", ряд=" +
-                    record.getRow() +
-                    ", полка=" +
-                    record.getShelf()
-            );
-        }
-
-        // Ищем или создаём продукт
         Product product = findOrCreateProduct(record, user);
-
-        // Получаем или создаём параметры склада для продукта
         ProductWarehouse productWarehouse = findOrCreateProductWarehouse(
             product,
             warehouse,
             record
         );
 
-        // Определяем статус инвентаризации
         InventoryHistoryStatus inventoryHistoryStatus =
             calculateInventoryStatus(
                 record.getQuantity(),
@@ -140,20 +121,16 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
                 productWarehouse.getOptimalStock()
             );
 
-        // Создаем запись в истории инвентаризации
         InventoryHistory inventoryHistory = createInventoryHistory(
             record,
             warehouse,
-            location,
             product,
             inventoryHistoryStatus
         );
         inventoryHistoryRepository.save(inventoryHistory);
     }
 
-    // ──────────────────────────────────────────────
-    //  Логика поиска / создания продукта
-    // ──────────────────────────────────────────────
+    // ── Продукт ──
 
     private Product findOrCreateProduct(InventoryCsvDto record, User user) {
         String csvSku = record.getSkuCode();
@@ -164,28 +141,25 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         if (hasSku) {
             String sku = csvSku.trim();
             try {
-                // SKU найден у пользователя
                 Product existingProduct = productService.findByUserIdAndSkuCode(
                     user.getId(),
                     sku
                 );
-
-                // Проверка названия (если указано в CSV)
-                if (hasName) {
-                    String csvName = record.getName().trim();
-                    if (!existingProduct.getName().equalsIgnoreCase(csvName)) {
-                        throw new InventoryImportException(
-                            String.format(
-                                "Существует товар с SKU '%s', но с другим названием: '%s' (ожидалось '%s'). Проверьте SKU код.",
-                                sku,
-                                existingProduct.getName(),
-                                csvName
-                            )
-                        );
-                    }
+                if (
+                    hasName &&
+                    !existingProduct
+                        .getName()
+                        .equalsIgnoreCase(record.getName().trim())
+                ) {
+                    throw new InventoryImportException(
+                        String.format(
+                            "Существует товар с SKU '%s', но с другим названием: '%s' (ожидалось '%s'). Проверьте SKU код.",
+                            sku,
+                            existingProduct.getName(),
+                            record.getName().trim()
+                        )
+                    );
                 }
-
-                // Обновляем категорию, если передана
                 if (
                     record.getCategory() != null &&
                     !record.getCategory().trim().isEmpty()
@@ -193,10 +167,8 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
                     existingProduct.setCategory(record.getCategory().trim());
                     productService.save(existingProduct);
                 }
-
                 return existingProduct;
             } catch (NotFoundException e) {
-                // SKU не найден — создаём новый продукт
                 if (!hasName) {
                     throw new InventoryImportException(
                         "Нельзя создать товар с новым SKU '" +
@@ -212,16 +184,14 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
                 );
             }
         } else {
-            // SKU не указан — создаём новый продукт с авто-SKU
             if (!hasName) {
                 throw new InventoryImportException(
                     "Нельзя создать товар без SKU и без названия (name)."
                 );
             }
-            String generatedSku = generateSkuCode();
             return createNewProduct(
                 user,
-                generatedSku,
+                generateSkuCode(),
                 record.getName().trim(),
                 record.getCategory()
             );
@@ -234,23 +204,22 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         String name,
         String category
     ) {
-        Product newProduct = Product.builder()
-            .user(user)
-            .skuCode(skuCode)
-            .name(name)
-            .category(
-                category != null && !category.trim().isEmpty()
-                    ? category.trim()
-                    : null
-            )
-            .isDeleted(false)
-            .build();
-        return productService.save(newProduct);
+        return productService.save(
+            Product.builder()
+                .user(user)
+                .skuCode(skuCode)
+                .name(name)
+                .category(
+                    category != null && !category.trim().isEmpty()
+                        ? category.trim()
+                        : null
+                )
+                .isDeleted(false)
+                .build()
+        );
     }
 
-    // ──────────────────────────────────────────────
-    //  Связь продукт-склад
-    // ──────────────────────────────────────────────
+    // ── Связь продукт-склад ──
 
     private ProductWarehouse findOrCreateProductWarehouse(
         Product product,
@@ -258,59 +227,48 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         InventoryCsvDto record
     ) {
         try {
-            ProductWarehouse productWarehouse =
+            ProductWarehouse pw =
                 productWarehouseEntityService.findActiveByProductAndWarehouse(
                     product.getId(),
                     warehouse.getId()
                 );
-
-            // Обновляем параметры, если переданы
             boolean updated = false;
-
             if (
                 record.getMinStock() != null &&
-                !record.getMinStock().equals(productWarehouse.getMinStock())
+                !record.getMinStock().equals(pw.getMinStock())
             ) {
-                productWarehouse.setMinStock(record.getMinStock());
+                pw.setMinStock(record.getMinStock());
                 updated = true;
             }
             if (
                 record.getOptimalStock() != null &&
-                !record
-                    .getOptimalStock()
-                    .equals(productWarehouse.getOptimalStock())
+                !record.getOptimalStock().equals(pw.getOptimalStock())
             ) {
-                productWarehouse.setOptimalStock(record.getOptimalStock());
+                pw.setOptimalStock(record.getOptimalStock());
                 updated = true;
             }
-
-            if (updated) {
-                return productWarehouseEntityService.update(productWarehouse);
-            }
-            return productWarehouse;
+            return updated ? productWarehouseEntityService.update(pw) : pw;
         } catch (NotFoundException e) {
-            // Создаем новую связь продукт-склад
-            ProductWarehouse newProductWarehouse = ProductWarehouse.builder()
-                .product(product)
-                .warehouse(warehouse)
-                .minStock(
-                    record.getMinStock() != null ? record.getMinStock() : 0
-                )
-                .optimalStock(
-                    record.getOptimalStock() != null
-                        ? record.getOptimalStock()
-                        : 0
-                )
-                .createdAt(LocalDateTime.now())
-                .isDeleted(false)
-                .build();
-            return productWarehouseEntityService.save(newProductWarehouse);
+            return productWarehouseEntityService.save(
+                ProductWarehouse.builder()
+                    .product(product)
+                    .warehouse(warehouse)
+                    .minStock(
+                        record.getMinStock() != null ? record.getMinStock() : 0
+                    )
+                    .optimalStock(
+                        record.getOptimalStock() != null
+                            ? record.getOptimalStock()
+                            : 0
+                    )
+                    .createdAt(LocalDateTime.now())
+                    .isDeleted(false)
+                    .build()
+            );
         }
     }
 
-    // ──────────────────────────────────────────────
-    //  Утилиты
-    // ──────────────────────────────────────────────
+    // ── Утилиты ──
 
     public static String generateSkuCode() {
         return UUID.randomUUID()
@@ -325,29 +283,27 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         Integer minStock,
         Integer optimalStock
     ) {
-        if (quantity <= minStock) {
-            return inventoryHistoryStatusService.findByCode(
-                InventoryHistoryStatus.InventoryHistoryStatusCode.CRITICAL
-            );
-        }
-        if (quantity < optimalStock) {
-            return inventoryHistoryStatusService.findByCode(
-                InventoryHistoryStatus.InventoryHistoryStatusCode.LOW_STOCK
-            );
-        }
+        if (
+            quantity <= minStock
+        ) return inventoryHistoryStatusService.findByCode(
+            InventoryHistoryStatus.InventoryHistoryStatusCode.CRITICAL
+        );
+        if (
+            quantity < optimalStock
+        ) return inventoryHistoryStatusService.findByCode(
+            InventoryHistoryStatus.InventoryHistoryStatusCode.LOW_STOCK
+        );
         return inventoryHistoryStatusService.findByCode(
             InventoryHistoryStatus.InventoryHistoryStatusCode.OK
         );
     }
 
     private void validateInventoryRecord(InventoryCsvDto record) {
-        // Количество обязательно всегда
         if (record.getQuantity() == null || record.getQuantity() < 0) {
             throw new InventoryImportException(
                 "Количество не может быть отрицательным или пустым"
             );
         }
-        // Локация обязательна всегда
         if (
             record.getZone() == null ||
             record.getRow() == null ||
@@ -357,17 +313,41 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
         }
     }
 
+    private void validateLocationBounds(
+        Integer zone,
+        Integer row,
+        Integer shelf,
+        Warehouse warehouse
+    ) {
+        if (
+            zone < 0 || zone > warehouse.getZoneMaxSize()
+        ) throw new InventoryImportException(
+            "Зона вне границ склада " + warehouse.getCode()
+        );
+        if (
+            row < 0 || row > warehouse.getRowMaxSize()
+        ) throw new InventoryImportException(
+            "Ряд вне границ склада " + warehouse.getCode()
+        );
+        if (
+            shelf < 0 || shelf > warehouse.getShelfMaxSize()
+        ) throw new InventoryImportException(
+            "Полка вне границ склада " + warehouse.getCode()
+        );
+    }
+
     private InventoryHistory createInventoryHistory(
         InventoryCsvDto record,
         Warehouse warehouse,
-        Location location,
         Product product,
         InventoryHistoryStatus status
     ) {
         return InventoryHistory.builder()
             .messageId(UUID.randomUUID())
             .warehouse(warehouse)
-            .location(location)
+            .zone(record.getZone())
+            .row(record.getRow())
+            .shelf(record.getShelf())
             .product(product)
             .quantity(record.getQuantity())
             .expectedQuantity(record.getQuantity())

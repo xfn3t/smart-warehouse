@@ -17,7 +17,6 @@ import org.springframework.stereotype.Repository;
 import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.service.product.dto.LowStockProductDTO;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.warehouse.model.Warehouse;
 
 @Repository
@@ -239,10 +238,12 @@ public interface InventoryHistoryRepository
 
     @Query(
         "SELECT COUNT(ih) FROM InventoryHistory ih " +
-            "WHERE ih.location = :location AND ih.warehouse = :warehouse AND ih.isDeleted = false"
+            "WHERE ih.zone = :zone AND ih.row = :row AND ih.shelf = :shelf AND ih.warehouse = :warehouse AND ih.isDeleted = false"
     )
-    int countByLocationAndWarehouse(
-        @Param("location") Location location,
+    int countByZoneAndRowAndShelfAndWarehouse(
+        @Param("zone") Integer zone,
+        @Param("row") Integer row,
+        @Param("shelf") Integer shelf,
         @Param("warehouse") Warehouse warehouse
     );
 
@@ -293,36 +294,50 @@ public interface InventoryHistoryRepository
 
     Optional<
         InventoryHistory
-    > findFirstByProduct_SkuCodeAndLocationAndWarehouseOrderByScannedAtDesc(
+    > findFirstByProduct_SkuCodeAndZoneAndRowAndShelfAndWarehouseOrderByScannedAtDesc(
         String skuCode,
-        Location location,
+        Integer zone,
+        Integer row,
+        Integer shelf,
         Warehouse warehouse
     );
 
-    // последние N записей для локации
-    List<InventoryHistory> findTopNByLocationAndWarehouseOrderByScannedAtDesc(
-        Location location,
+    // последние N записей для локации (zone/row/shelf)
+    List<
+        InventoryHistory
+    > findTopNByZoneAndRowAndShelfAndWarehouseOrderByScannedAtDesc(
+        Integer zone,
+        Integer row,
+        Integer shelf,
         Warehouse warehouse,
         Pageable pageable
     );
     // JPA не поддерживает findTopNBy... автоматически with dynamic N, поэтому используем PageRequest.of(0, N)
-    List<InventoryHistory> findByLocationAndWarehouseOrderByScannedAtDesc(
-        Location location,
+    List<
+        InventoryHistory
+    > findByZoneAndRowAndShelfAndWarehouseOrderByScannedAtDesc(
+        Integer zone,
+        Integer row,
+        Integer shelf,
         Warehouse warehouse,
         Pageable pageable
     );
 
-    // последний скан для локации
+    // последний скан для локации (zone/row/shelf)
     Optional<
         InventoryHistory
-    > findFirstByLocationAndWarehouseOrderByScannedAtDesc(
-        Location location,
+    > findFirstByZoneAndRowAndShelfAndWarehouseOrderByScannedAtDesc(
+        Integer zone,
+        Integer row,
+        Integer shelf,
         Warehouse warehouse
     );
 
     // кол-во сканов после указанного времени
-    long countByLocationAndWarehouseAndScannedAtAfter(
-        Location location,
+    long countByZoneAndRowAndShelfAndWarehouseAndScannedAtAfter(
+        Integer zone,
+        Integer row,
+        Integer shelf,
         Warehouse warehouse,
         LocalDateTime since
     );
@@ -348,8 +363,11 @@ public interface InventoryHistoryRepository
         LocalDateTime scannedAt
     );
 
-    boolean existsByLocationAndScannedAtAfter(
-        Location location,
+    boolean existsByZoneAndRowAndShelfAndWarehouseAndScannedAtAfter(
+        Integer zone,
+        Integer row,
+        Integer shelf,
+        Warehouse warehouse,
         LocalDateTime since
     );
 
@@ -439,5 +457,27 @@ public interface InventoryHistoryRepository
         @Param("productCodes") List<String> productCodes,
         @Param("from") String from,
         @Param("to") String to
+    );
+
+    @Query(
+        "SELECT DISTINCT ih.zone, ih.row, ih.shelf, ih.warehouse " +
+            "FROM InventoryHistory ih WHERE ih.isDeleted = false"
+    )
+    List<Object[]> findDistinctZoneRowShelfWithWarehouse();
+
+    @Query(
+        "SELECT DISTINCT ih.zone, ih.row, ih.shelf " +
+            "FROM InventoryHistory ih WHERE ih.warehouse = :warehouse AND ih.isDeleted = false"
+    )
+    List<Object[]> findDistinctZoneRowShelfByWarehouse(
+        @Param("warehouse") Warehouse warehouse
+    );
+
+    @Query(
+        "SELECT COUNT(DISTINCT CONCAT(ih.zone, '-', ih.row, '-', ih.shelf)) " +
+            "FROM InventoryHistory ih WHERE ih.warehouse = :warehouse AND ih.isDeleted = false"
+    )
+    long countDistinctZoneRowShelfByWarehouse(
+        @Param("warehouse") Warehouse warehouse
     );
 }

@@ -17,7 +17,7 @@ import ru.rtc.warehouse.robot.model.Robot;
 
 @Mapper(
     componentModel = "spring",
-    uses = {ProductMapper.class},
+    uses = { ProductMapper.class },
     unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 public abstract class InventoryHistoryMapper {
@@ -41,6 +41,9 @@ public abstract class InventoryHistoryMapper {
         @Mapping(target = "product", source = "product"),
         @Mapping(target = "warehouse", ignore = true),
         @Mapping(target = "status", source = "status.code"),
+        @Mapping(target = "zone", source = "zone"),
+        @Mapping(target = "rowNumber", source = "row"),
+        @Mapping(target = "shelfNumber", source = "shelf"),
     })
     public abstract InventoryHistoryDTO toDto(InventoryHistory entity);
 

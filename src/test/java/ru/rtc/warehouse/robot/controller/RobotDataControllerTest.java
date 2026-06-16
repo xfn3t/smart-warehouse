@@ -1,6 +1,17 @@
 package ru.rtc.warehouse.robot.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -13,26 +24,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.rtc.warehouse.robot.controller.dto.response.RobotDataResponse;
 import ru.rtc.warehouse.robot.service.RobotDataService;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @WebMvcTest(
     value = RobotDataController.class,
-    excludeAutoConfiguration = {SecurityAutoConfiguration.class}
+    excludeAutoConfiguration = { SecurityAutoConfiguration.class }
 )
-@TestPropertySource(properties = {
-    "server.port=8080",
-    "spring.main.allow-bean-definition-overriding=true"
-})
+@TestPropertySource(
+    properties = {
+        "server.port=8080",
+        "spring.main.allow-bean-definition-overriding=true",
+    }
+)
 class RobotDataControllerTest {
 
     @Autowired
@@ -45,61 +46,83 @@ class RobotDataControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @WithMockUser(username = "RB-0001", roles = {"ROBOT"})
+    @WithMockUser(username = "RB-0001", roles = { "ROBOT" })
     void whenValidData_thenCallsServiceAndReturnsResponse() throws Exception {
         Map<String, Object> request = Map.of(
-            "code", "RB-0001",
-            "timestamp", Instant.parse("2023-10-10T10:00:00Z"),
-            "location", Map.of("zone", 1, "row", 1, "shelf", 1),
-            "scanResults", List.of(
+            "code",
+            "RB-0001",
+            "timestamp",
+            Instant.parse("2023-10-10T10:00:00Z"),
+            "location",
+            Map.of("zone", 1, "row", 1, "shelf", 1),
+            "scanResults",
+            List.of(
                 Map.of(
-                    "productCode", "TEL-4567",
-                    "productName", "Роутер",
-                    "quantity", 10,
+                    "productCode",
+                    "TEL-4567",
+                    "productName",
+                    "Роутер",
+                    "quantity",
+                    10,
 
-                    "status", Map.of("code", "OK")
+                    "status",
+                    Map.of("code", "OK")
                 )
             ),
-            "batteryLevel", 85,
-            "nextCheckpoint", "1-2-3"
+            "batteryLevel",
+            85,
+            "nextCheckpoint",
+            "1-2-3"
         );
 
         UUID msgId = UUID.randomUUID();
         List<UUID> msgIds = new ArrayList();
         msgIds.add(msgId);
-        when(robotDataService.processRobotData(any())).thenReturn(new RobotDataResponse("received", msgIds));
+        when(robotDataService.processRobotData(any())).thenReturn(
+            new RobotDataResponse("received", msgIds)
+        );
 
         String json = objectMapper.writeValueAsString(request);
 
-        mockMvc.perform(post("/api/robots/data")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("received"))
-                .andExpect(jsonPath("$.messageId").exists());
+        mockMvc
+            .perform(
+                post("/api/robots/data")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("received"))
+            .andExpect(jsonPath("$.messageId").exists());
 
         verify(robotDataService, times(1)).processRobotData(any());
     }
 
     @Test
-    @WithMockUser(username = "RB-001", roles = {"ROBOT"})
+    @WithMockUser(username = "RB-001", roles = { "ROBOT" })
     void whenInvalidData_thenReturns400() throws Exception {
-
         Map<String, Object> request = Map.of(
-                "code", "RB-001",
-                "timestamp", Instant.now(),
-                "location", Map.of("zone", 1, "row", 1, "shelf", 1),
-                "batteryLevel", 85,
-                "nextCheckpoint", "1-2-3"
+            "code",
+            "RB-001",
+            "timestamp",
+            Instant.now(),
+            "location",
+            Map.of("zone", 1, "row", 1, "shelf", 1),
+            "batteryLevel",
+            85,
+            "nextCheckpoint",
+            "1-2-3"
         );
 
         String json = objectMapper.writeValueAsString(request);
 
-        mockMvc.perform(post("/api/robots/data")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json))
-                .andExpect(status().isBadRequest());
+        mockMvc
+            .perform(
+                post("/api/robots/data")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json)
+            )
+            .andExpect(status().isBadRequest());
 
         verify(robotDataService, never()).processRobotData(any());
     }
