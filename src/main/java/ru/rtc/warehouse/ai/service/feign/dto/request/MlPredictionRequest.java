@@ -1,4 +1,4 @@
-package ru.rtc.warehouse.ai.service.dto;
+package ru.rtc.warehouse.ai.service.feign.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

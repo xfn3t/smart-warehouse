@@ -1,10 +1,7 @@
-package ru.rtc.warehouse.ai.service.dto;
+package ru.rtc.warehouse.ai.service.feign.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import ru.rtc.warehouse.ai.service.dto.MlPredictionItem;
 
 import java.util.List;
 

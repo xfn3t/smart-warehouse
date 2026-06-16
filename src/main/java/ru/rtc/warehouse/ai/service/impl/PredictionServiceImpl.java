@@ -12,10 +12,11 @@ import ru.rtc.warehouse.ai.service.InventoryHistoryEntAdapter;
 import ru.rtc.warehouse.ai.service.PredictionRedisService;
 import ru.rtc.warehouse.ai.service.PredictionService;
 import ru.rtc.warehouse.ai.service.dto.MlPredictionItem;
-import ru.rtc.warehouse.ai.service.dto.MlPredictionRequest;
 import ru.rtc.warehouse.ai.service.dto.PredictionItemDTO;
 import ru.rtc.warehouse.ai.service.dto.RedisPredictionDTO;
 import ru.rtc.warehouse.ai.service.feign.PredictionClient;
+import ru.rtc.warehouse.ai.service.feign.dto.request.MlPredictionRequest;
+import ru.rtc.warehouse.ai.service.feign.dto.response.MlPredictionResponse;
 import ru.rtc.warehouse.ai.service.feign.dto.response.StockPredictionResponse;
 import ru.rtc.warehouse.exception.NotFoundException;
 import ru.rtc.warehouse.product.model.Product;
@@ -73,7 +74,7 @@ public class PredictionServiceImpl implements PredictionService {
 		}
 
 		log.info("Sending {} feature sets to ML service", featureSets.size());
-		ru.rtc.warehouse.ai.service.dto.MlPredictionResponse predictionResponse = predictionClient.predict(featureSets);
+		MlPredictionResponse predictionResponse = predictionClient.predict(featureSets);
 		log.info("Received response from ML service: {}", predictionResponse != null);
 
 		if (predictionResponse == null || !"ok".equals(predictionResponse.getStatus())) {
@@ -92,7 +93,7 @@ public class PredictionServiceImpl implements PredictionService {
 		return response;
 	}
 
-	private StockPredictionResponse convertToStockPredictionResponse(ru.rtc.warehouse.ai.service.dto.MlPredictionResponse mlResponse) {
+	private StockPredictionResponse convertToStockPredictionResponse(MlPredictionResponse mlResponse) {
 		List<PredictionItemDTO> predictionItems = mlResponse.getPrediction().stream()
 				.map(item -> PredictionItemDTO.builder()
 						.daysUntilStockout(item.getDaysUntilStockout())
@@ -185,7 +186,7 @@ public class PredictionServiceImpl implements PredictionService {
 		}
 	}
 
-	private void processAndSavePredictions(ru.rtc.warehouse.ai.service.dto.MlPredictionResponse predictionResponse, Warehouse warehouse,
+	private void processAndSavePredictions(MlPredictionResponse predictionResponse, Warehouse warehouse,
 										   List<MlPredictionRequest> originalFeatureSets) {
 		List<MlPredictionItem> predictions = predictionResponse.getPrediction();
 		log.info("Processing {} predictions from ML service", predictions.size());
