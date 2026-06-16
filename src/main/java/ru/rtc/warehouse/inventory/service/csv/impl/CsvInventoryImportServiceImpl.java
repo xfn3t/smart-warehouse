@@ -16,12 +16,10 @@ import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryStatusService;
-import ru.rtc.warehouse.inventory.service.adapter.IHLocationEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.adapter.IHProductEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.adapter.IHWarehouseEntServiceAdapter;
 import ru.rtc.warehouse.inventory.service.csv.CsvProcessingService;
 import ru.rtc.warehouse.inventory.service.csv.InventoryImportService;
-import ru.rtc.warehouse.location.model.Location;
 import ru.rtc.warehouse.product.model.Product;
 import ru.rtc.warehouse.product.model.ProductWarehouse;
 import ru.rtc.warehouse.product.service.ProductWarehouseEntityService;
@@ -193,7 +191,7 @@ public class CsvInventoryImportServiceImpl implements InventoryImportService {
             }
             return createNewProduct(
                 user,
-                generatedSku,
+                generateSkuCode(),
                 record.getName().trim(),
                 record.getCategory()
             );

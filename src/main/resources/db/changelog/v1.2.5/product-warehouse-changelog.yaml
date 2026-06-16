@@ -62,7 +62,7 @@ databaseChangeLog:
               FROM products p
               CROSS JOIN warehouses w
               WHERE NOT EXISTS (
-                SELECT 1 FROM product_warehouse pw 
+                SELECT 1 FROM product_warehouse pw
                 WHERE pw.product_id = p.id AND pw.warehouse_id = w.id
               )
 

@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: insert-role-robot
       author: dev
+      onError: MARK_RAN
       changes:
         - insert:
             tableName: roles

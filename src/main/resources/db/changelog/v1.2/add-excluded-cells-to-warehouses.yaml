@@ -3,10 +3,11 @@ databaseChangeLog:
       id: add-excluded-cells-to-warehouses
       author: dev
       preConditions:
-        - not:
-            columnExists:
-              tableName: warehouses
-              columnName: excluded_cells
+        onFail: MARK_RAN
+        not:
+          columnExists:
+            tableName: warehouses
+            columnName: excluded_cells
       changes:
         - addColumn:
             tableName: warehouses
@@ -14,4 +15,3 @@ databaseChangeLog:
               - column:
                   name: excluded_cells
                   type: JSONB
-                  remarks: Optional (zone,row) cells excluded from the location matrix

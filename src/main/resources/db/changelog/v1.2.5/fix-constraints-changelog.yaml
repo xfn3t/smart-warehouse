@@ -6,7 +6,7 @@ databaseChangeLog:
         - dropForeignKeyConstraint:
             baseTableName: robots
             constraintName: fk_location
-        
+
         - addForeignKeyConstraint:
             baseTableName: robots
             baseColumnNames: location_id
@@ -22,7 +22,7 @@ databaseChangeLog:
         - dropForeignKeyConstraint:
             baseTableName: inventory_history
             constraintName: fk_location
-        
+
         - addForeignKeyConstraint:
             baseTableName: inventory_history
             baseColumnNames: location_id

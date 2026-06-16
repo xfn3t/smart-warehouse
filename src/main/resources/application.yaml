@@ -24,9 +24,16 @@ spring:
       pool:
         enabled: true
   liquibase:
-    change-log: classpath:db/changelog/master-changelog-v1.3.yaml
+    change-log: classpath:db/changelog/master-changelog-v1.4.yaml
     enabled: true
-    clear-checksums: true
+    clear-checksums: false
+
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_USER:minioadmin}
+  secret-key: ${MINIO_PASSWORD:minioadmin}
+  bucket: ${S3_BUCKET:warehouse-images}
+  region: ${S3_REGION:us-east-1}
 
 server:
   port: ${APP_PORT:8080}

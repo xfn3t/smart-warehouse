@@ -1,7 +1,10 @@
 databaseChangeLog:
   - include:
-      file: master-changelog-v1.3.yaml
+      file: master-changelog-v1.3.5.yaml
       relativeToChangelogFile: true
   - include:
       file: v1.4/add-user-id-to-products.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.4/remove-location-table.yaml
       relativeToChangelogFile: true

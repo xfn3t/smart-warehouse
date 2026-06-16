@@ -74,14 +74,3 @@ databaseChangeLog:
   - include:
       file: v1.3/report-views-changelog.yaml
       relativeToChangelogFile: true
-  - include:
-      file: v1.3.5/fix-robots-location-id.yaml
-      relativeToChangelogFile: true
-
-  - include:
-      file: master-changelog-v1.3.5.yaml
-      relativeToChangelogFile: true
-
-  - include:
-      file: master-changelog-v1.4.yaml
-      relativeToChangelogFile: true

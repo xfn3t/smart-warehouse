@@ -29,6 +29,13 @@ security:
   jwt:
     secret: test-secret-key-32chars-minimum!!
 
+s3:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: warehouse-images-test
+  region: us-east-1
+
 logging:
   level:
     root: warn
