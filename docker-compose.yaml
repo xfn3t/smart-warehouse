@@ -61,8 +61,7 @@ services:
 
   ai-service:
     build:
-      context: .
-      dockerfile: Dockerfile.ai
+      context: ./smart_warehouse_ai
     container_name: ai-service
     restart: always
     ports:

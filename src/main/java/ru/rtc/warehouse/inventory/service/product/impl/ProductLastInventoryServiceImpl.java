@@ -47,18 +47,6 @@ public class ProductLastInventoryServiceImpl
                 );
             }
             if (
-                searchRequest.getStatuses() != null &&
-                !searchRequest.getStatuses().isEmpty()
-            ) {
-                where.append(" AND ist.code = ANY(?)");
-                List<String> statusNames = searchRequest
-                    .getStatuses()
-                    .stream()
-                    .map(Enum::name)
-                    .toList();
-                params.add(statusNames.toArray(new String[0]));
-            }
-            if (
                 searchRequest.getQ() != null && !searchRequest.getQ().isBlank()
             ) {
                 where.append(
@@ -77,30 +65,35 @@ public class ProductLastInventoryServiceImpl
             }
         }
 
+        // Статус теперь вычисляется динамически, фильтруем через HAVING
+        StringBuilder statusFilter = new StringBuilder();
+        if (
+            searchRequest != null &&
+            searchRequest.getStatuses() != null &&
+            !searchRequest.getStatuses().isEmpty()
+        ) {
+            List<String> statusNames = searchRequest
+                .getStatuses()
+                .stream()
+                .map(Enum::name)
+                .toList();
+            // Строим фильтр через HAVING на вычисляемом поле statusCode
+            // HAVING будет добавлен после подзапроса
+            List<String> placeholders = new ArrayList<>();
+            for (String s : statusNames) {
+                placeholders.add("?");
+                params.add(s);
+            }
+            statusFilter
+                .append(" AND sub.statusCode IN (")
+                .append(String.join(",", placeholders))
+                .append(")");
+        }
+
         String orderClause = buildOrderClause(pageable.getSort());
 
-        String countSql = """
-            SELECT COUNT(*)
-            FROM (
-                SELECT DISTINCT ON (ih.product_id) ih.product_id
-                FROM inventory_history ih
-                JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
-                JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
-                JOIN inventory_status ist ON ist.id = ih.status_id
-                LEFT JOIN robots r ON r.id = ih.robot_id AND r.is_deleted = false
-                WHERE w.code = ?
-                  AND ih.is_deleted = false
-                  %s
-            ) sub
-            """.formatted(where);
-
-        Long total = jdbcTemplate.queryForObject(
-            countSql,
-            Long.class,
-            params.toArray()
-        );
-
-        String dataSql = """
+        // Внутренний подзапрос: последнее сканирование + вычисляемый статус
+        String innerSql = """
             SELECT DISTINCT ON (ih.product_id)
                 p.sku_code AS productCode,
                 p.name AS productName,
@@ -110,7 +103,11 @@ public class ProductLastInventoryServiceImpl
                 ih.quantity AS actualQuantity,
                 ih.difference AS difference,
                 ih.scanned_at AS lastScannedAt,
-                ist.code AS statusCode,
+                CASE
+                    WHEN ih.quantity <= pw.min_stock THEN 'CRITICAL'
+                    WHEN ih.quantity <= pw.optimal_stock THEN 'LOW_STOCK'
+                    ELSE 'OK'
+                END AS statusCode,
                 r.robot_code AS robotCode,
                 ih.zone AS zone,
                 ih.row AS row,
@@ -118,14 +115,42 @@ public class ProductLastInventoryServiceImpl
             FROM inventory_history ih
             JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
             JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
-            JOIN inventory_status ist ON ist.id = ih.status_id
+            LEFT JOIN product_warehouse pw
+                ON pw.product_id = ih.product_id
+                AND pw.warehouse_id = ih.warehouse_id
+                AND pw.is_deleted = false
             LEFT JOIN robots r ON r.id = ih.robot_id AND r.is_deleted = false
             WHERE w.code = ?
               AND ih.is_deleted = false
               %s
-            ORDER BY ih.product_id, %s
+            ORDER BY ih.product_id, ih.scanned_at DESC NULLS LAST
+            """.formatted(where);
+
+        // count: оборачиваем в ещё один подзапрос
+        String countSql = """
+            SELECT COUNT(*)
+            FROM (
+                %s
+            ) sub
+            WHERE 1=1 %s
+            """.formatted(innerSql, statusFilter);
+
+        Long total = jdbcTemplate.queryForObject(
+            countSql,
+            Long.class,
+            params.toArray()
+        );
+
+        // data: оборачиваем + применяем фильтр по статусу + сортировку + пагинацию
+        String dataSql = """
+            SELECT *
+            FROM (
+                %s
+            ) sub
+            WHERE 1=1 %s
+            ORDER BY %s
             LIMIT ? OFFSET ?
-            """.formatted(where, orderClause);
+            """.formatted(innerSql, statusFilter, orderClause);
 
         List<Object> dataParams = new ArrayList<>(params);
         dataParams.add(pageable.getPageSize());
@@ -147,19 +172,19 @@ public class ProductLastInventoryServiceImpl
 
     private String buildOrderClause(Sort sort) {
         if (sort.isUnsorted()) {
-            return "ih.scanned_at DESC NULLS LAST";
+            return "lastScannedAt DESC NULLS LAST";
         }
         StringBuilder sb = new StringBuilder();
         for (Sort.Order order : sort) {
             if (!sb.isEmpty()) sb.append(", ");
             String col = switch (order.getProperty()) {
-                case "productCode" -> "p.sku_code";
-                case "productName" -> "p.name";
-                case "actualQuantity" -> "ih.quantity";
-                case "lastScannedAt" -> "ih.scanned_at";
-                case "statusCode" -> "ist.code";
-                case "robotCode" -> "r.robot_code";
-                default -> "ih.scanned_at";
+                case "productCode" -> "productCode";
+                case "productName" -> "productName";
+                case "actualQuantity" -> "actualQuantity";
+                case "lastScannedAt" -> "lastScannedAt";
+                case "statusCode" -> "statusCode";
+                case "robotCode" -> "robotCode";
+                default -> "lastScannedAt";
             };
             sb.append(col).append(" ").append(order.getDirection().name());
         }
