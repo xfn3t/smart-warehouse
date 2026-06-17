@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import ru.rtc.warehouse.dashboard.dto.location.WarehouseLocationsDTO;
 import ru.rtc.warehouse.dashboard.dto.robot.*;
 import ru.rtc.warehouse.dashboard.service.DashboardService;
 import ru.rtc.warehouse.dashboard.service.dto.AlertStatsDTO;
+import ru.rtc.warehouse.inventory.model.InventoryHistory;
 import ru.rtc.warehouse.inventory.model.InventoryHistoryStatus;
 import ru.rtc.warehouse.inventory.repository.InventoryHistoryRepository;
 import ru.rtc.warehouse.inventory.service.InventoryHistoryEntityService;
@@ -339,29 +341,40 @@ public class DashboardServiceImpl implements DashboardService {
                 inventoryHistoryRepository.findDistinctZoneRowShelfByWarehouse(
                     warehouse
                 );
-            long totalLocations = distinctLocations.size();
+            long totalCells =
+                (long) warehouse.getZoneMaxSize() *
+                warehouse.getRowMaxSize() *
+                warehouse.getShelfMaxSize();
 
-            if (totalLocations > 0) {
-                LocalDateTime last24Hours = LocalDateTime.now().minusHours(24);
-                long activeLocations = distinctLocations
-                    .stream()
-                    .filter(row -> {
-                        Integer zone = (Integer) row[0];
-                        Integer r = (Integer) row[1];
-                        Integer shelf = (Integer) row[2];
-                        return hasRecentScans(
-                            zone,
-                            r,
-                            shelf,
-                            warehouse,
-                            last24Hours
-                        );
-                    })
-                    .count();
-
-                int percent = (int) ((activeLocations * 100) / totalLocations);
-                return percent + "%";
+            if (totalCells == 0) {
+                return "0%";
             }
+
+            long occupied = 0;
+            for (Object[] loc : distinctLocations) {
+                Integer z = (Integer) loc[0];
+                Integer r = (Integer) loc[1];
+                Integer s = (Integer) loc[2];
+
+                Optional<InventoryHistory> latest =
+                    inventoryHistoryRepository.findFirstByZoneAndRowAndShelfAndWarehouseOrderByScannedAtDesc(
+                        z,
+                        r,
+                        s,
+                        warehouse
+                    );
+
+                if (
+                    latest.isPresent() &&
+                    latest.get().getQuantity() != null &&
+                    latest.get().getQuantity() > 0
+                ) {
+                    occupied++;
+                }
+            }
+
+            int percent = (int) ((occupied * 100) / totalCells);
+            return percent + "%";
         } catch (Exception e) {
             log.warn(
                 "Failed to calculate capacity for warehouse {}: {}",
