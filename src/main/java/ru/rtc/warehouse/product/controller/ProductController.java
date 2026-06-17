@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.product.controller.dto.request.ProductCreateRequest;
 import ru.rtc.warehouse.product.controller.dto.request.ProductUpdateRequest;
+import ru.rtc.warehouse.product.controller.dto.response.UserProductOnWarehouseDTO;
 import ru.rtc.warehouse.product.service.ProductEntityService;
 import ru.rtc.warehouse.product.service.ProductService;
 import ru.rtc.warehouse.product.service.dto.ProductDTO;
@@ -30,9 +31,9 @@ public class ProductController {
         @PathVariable String warehouseCode,
         @Valid @RequestBody ProductCreateRequest request
     ) {
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(productService.create(warehouseCode, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            productService.create(warehouseCode, request)
+        );
     }
 
     @PutMapping("/{productCode}")
@@ -64,5 +65,12 @@ public class ProductController {
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(productEntityService.findDistinctCategories());
+    }
+
+    @GetMapping("/on-warehouses")
+    public ResponseEntity<
+        List<UserProductOnWarehouseDTO>
+    > findUserProductsOnWarehouses() {
+        return ResponseEntity.ok(productService.findUserProductsOnWarehouses());
     }
 }

@@ -89,4 +89,9 @@ public class ProductEntityServiceImpl implements ProductEntityService {
     public List<String> findDistinctCategories() {
         return productRepository.findDistinctCategories();
     }
+
+    @Override
+    public List<Object[]> findUserProductsOnWarehouses(Long userId) {
+        return productRepository.findUserProductsOnWarehouses(userId);
+    }
 }

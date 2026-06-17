@@ -100,4 +100,54 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         "SELECT DISTINCT p.category FROM Product p WHERE p.category IS NOT NULL AND p.isDeleted = false ORDER BY p.category"
     )
     List<String> findDistinctCategories();
+
+    /**
+     * Возвращает товары пользователя на его складах с актуальным количеством (последнее сканирование).
+     * Один нативный запрос — без N+1.
+     */
+    @Query(
+        value = """
+            SELECT
+                p.sku_code            AS skuCode,
+                p.name                AS productName,
+                p.category            AS category,
+                p.image_url           AS imageUrl,
+                w.code                AS warehouseCode,
+                w.name                AS warehouseName,
+                latest.quantity       AS quantity,
+                latest.zone           AS zone,
+                latest.row            AS "row",
+                latest.shelf          AS shelf,
+                pw.min_stock          AS minStock,
+                pw.optimal_stock      AS optimalStock
+            FROM products p
+            JOIN product_warehouse pw
+                ON pw.product_id = p.id
+                AND pw.is_deleted = FALSE
+            JOIN warehouses w
+                ON w.id = pw.warehouse_id
+                AND w.is_deleted = FALSE
+            JOIN user_warehouses uw
+                ON uw.warehouse_id = w.id
+                AND uw.user_id = :userId
+            LEFT JOIN LATERAL (
+                SELECT
+                    ih.quantity,
+                    ih.zone,
+                    ih.row,
+                    ih.shelf
+                FROM inventory_history ih
+                WHERE ih.product_id = p.id
+                  AND ih.warehouse_id = w.id
+                  AND ih.is_deleted = FALSE
+                ORDER BY ih.scanned_at DESC
+                LIMIT 1
+            ) latest ON TRUE
+            WHERE p.user_id = :userId
+              AND p.is_deleted = FALSE
+            ORDER BY w.code, p.name
+        """,
+        nativeQuery = true
+    )
+    List<Object[]> findUserProductsOnWarehouses(@Param("userId") Long userId);
 }
