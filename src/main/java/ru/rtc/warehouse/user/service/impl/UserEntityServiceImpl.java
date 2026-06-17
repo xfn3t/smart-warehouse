@@ -58,7 +58,7 @@ public class UserEntityServiceImpl implements UserEntityService {
     @Override
     @Transactional(readOnly = true)
     public boolean existByEmail(String email) {
-        return false;
+        return userRepository.findByEmail(email).isPresent();
     }
 
     @Override

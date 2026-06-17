@@ -1,5 +1,10 @@
 package ru.rtc.warehouse.auth.service;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,128 +26,134 @@ import ru.rtc.warehouse.user.model.User;
 import ru.rtc.warehouse.user.service.UserService;
 import ru.rtc.warehouse.user.service.dto.UserDTO;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-	private final AuthenticationManager authenticationManager;
-	private final JwtUtil jwtUtil;
-	private final UserService userService;
-	private final UserMapper userMapper;
-	private final RefreshTokenRepository refreshTokenRepository;
-	private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserService userService;
+    private final UserMapper userMapper;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
-	@Value("${security.jwt.refresh-token-exp-seconds:1209600}")
-	private long refreshTokenValiditySeconds; // default 14 days
+    @Value("${security.jwt.refresh-token-exp-seconds:1209600}")
+    private long refreshTokenValiditySeconds; // default 14 days
 
-	@Transactional
-	public AuthResponse login(String email, String password) {
-		Authentication auth = authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(email, password)
-		);
+    @Transactional
+    public AuthResponse login(String email, String password) {
+        Authentication auth = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(email, password)
+        );
 
-		var userDetails = (UserDetailsImpl) auth.getPrincipal();
-		User user = userDetails.getUser();
+        var userDetails = (UserDetailsImpl) auth.getPrincipal();
+        User user = userDetails.getUser();
 
-		refreshTokenRepository.deleteAllByUser(user);
+        refreshTokenRepository.deleteAllByUser(user);
 
-		String accessToken = createAccessToken(user);
-		RefreshToken refreshToken = createAndSaveRefreshToken(user);
+        String accessToken = createAccessToken(user);
+        RefreshToken refreshToken = createAndSaveRefreshToken(user);
 
-		return AuthResponse.builder()
-				.accessToken(accessToken)
-				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
-				.build();
-	}
+        return AuthResponse.builder()
+            .accessToken(accessToken)
+            .refreshToken(refreshToken.getToken())
+            .accessTokenExpiresInSeconds(
+                jwtUtil.getAccessTokenValiditySeconds()
+            )
+            .build();
+    }
 
-	private String createAccessToken(User user) {
-		Map<String, Object> claims = new HashMap<>();
-		claims.put("roles", List.of(user.getRole().getCode()));
-		claims.put("userId", user.getId());
-		claims.put("name", user.getName());
-		return jwtUtil.generateAccessToken(user.getEmail(), claims);
-	}
+    private String createAccessToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", List.of(user.getRole().getCode()));
+        claims.put("userId", user.getId());
+        claims.put("name", user.getName());
+        return jwtUtil.generateAccessToken(user.getEmail(), claims);
+    }
 
-	private RefreshToken createAndSaveRefreshToken(User user) {
-		String token = UUID.randomUUID() + "-" + UUID.randomUUID();
-		Instant expiry = Instant.now().plusSeconds(refreshTokenValiditySeconds);
-		RefreshToken rt = RefreshToken.builder()
-				.token(token)
-				.user(user)
-				.expiryDate(expiry)
-				.revoked(false)
-				.build();
-		return refreshTokenRepository.save(rt);
-	}
+    private RefreshToken createAndSaveRefreshToken(User user) {
+        String token = UUID.randomUUID() + "-" + UUID.randomUUID();
+        Instant expiry = Instant.now().plusSeconds(refreshTokenValiditySeconds);
+        RefreshToken rt = RefreshToken.builder()
+            .token(token)
+            .user(user)
+            .expiryDate(expiry)
+            .revoked(false)
+            .build();
+        return refreshTokenRepository.save(rt);
+    }
 
-	@Transactional
-	public AuthResponse refreshAccessToken(String refreshTokenString) {
-		RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
-				.orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+    @Transactional
+    public AuthResponse refreshAccessToken(String refreshTokenString) {
+        RefreshToken refreshToken = refreshTokenRepository
+            .findByToken(refreshTokenString)
+            .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
-		if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
-			throw new RuntimeException("Refresh token expired or revoked");
-		}
+        if (
+            refreshToken.isRevoked() ||
+            refreshToken.getExpiryDate().isBefore(Instant.now())
+        ) {
+            throw new RuntimeException("Refresh token expired or revoked");
+        }
 
-		User user = refreshToken.getUser();
+        User user = refreshToken.getUser();
 
-		refreshTokenRepository.deleteAllByUser(user);
-		RefreshToken newRefresh = createAndSaveRefreshToken(user);
-		String accessToken = createAccessToken(user);
+        refreshTokenRepository.deleteAllByUser(user);
+        RefreshToken newRefresh = createAndSaveRefreshToken(user);
+        String accessToken = createAccessToken(user);
 
-		return AuthResponse.builder()
-				.accessToken(accessToken)
-				.refreshToken(newRefresh.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
-				.build();
-	}
+        return AuthResponse.builder()
+            .accessToken(accessToken)
+            .refreshToken(newRefresh.getToken())
+            .accessTokenExpiresInSeconds(
+                jwtUtil.getAccessTokenValiditySeconds()
+            )
+            .build();
+    }
 
-	@Transactional
-	public void logout(String refreshToken) {
-		refreshTokenRepository.findByToken(refreshToken).ifPresent(rt -> {
-			rt.setRevoked(true);
-			refreshTokenRepository.save(rt);
-		});
-	}
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenRepository.findByToken(refreshToken).ifPresent(rt -> {
+            rt.setRevoked(true);
+            refreshTokenRepository.save(rt);
+        });
+    }
 
-	@Transactional
-	public AuthResponse register(RegisterRequest request) {
-		RoleCode role = null;
-		if (request.getRole() != null && !request.getRole().isBlank()) {
-			try {
-				role = RoleCode.valueOf(request.getRole().toUpperCase());
-			} catch (IllegalArgumentException e) {
-				throw new RuntimeException("Invalid role: " + request.getRole());
-			}
-		}
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        RoleCode role = null;
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            try {
+                role = RoleCode.valueOf(request.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException(
+                    "Invalid role: " + request.getRole()
+                );
+            }
+        }
 
-		UserCreateRequest createRequest = UserCreateRequest.builder()
-				.email(request.getEmail())
-				.name(request.getName())
-				.password(passwordEncoder.encode(request.getPassword()))
-				.role(role != null ? role.toString() : null)
-				.build();
+        UserCreateRequest createRequest = UserCreateRequest.builder()
+            .email(request.getEmail())
+            .name(request.getName())
+            .password(passwordEncoder.encode(request.getPassword()))
+            .role(role != null ? role.toString() : null)
+            .build();
 
-		// Сохраняем пользователя и получаем UserDTO
-		UserDTO userDTO = userService.save(createRequest);
+        // Сохраняем пользователя и получаем UserDTO
+        UserDTO userDTO = userService.save(createRequest);
 
-		// Преобразуем UserDTO обратно в User entity для создания токена
-		User user = userMapper.toEntity(userDTO);
+        // Преобразуем UserDTO обратно в User entity для создания токена
+        User user = userMapper.toEntity(userDTO);
 
-		String accessToken = createAccessToken(user);
-		RefreshToken refreshToken = createAndSaveRefreshToken(user);
+        String accessToken = createAccessToken(user);
+        RefreshToken refreshToken = createAndSaveRefreshToken(user);
 
-		return AuthResponse.builder()
-				.accessToken(accessToken)
-				.refreshToken(refreshToken.getToken())
-				.accessTokenExpiresInSeconds(jwtUtil.getAccessTokenValiditySeconds())
-				.build();
-	}
+        return AuthResponse.builder()
+            .accessToken(accessToken)
+            .refreshToken(refreshToken.getToken())
+            .accessTokenExpiresInSeconds(
+                jwtUtil.getAccessTokenValiditySeconds()
+            )
+            .build();
+    }
 }
