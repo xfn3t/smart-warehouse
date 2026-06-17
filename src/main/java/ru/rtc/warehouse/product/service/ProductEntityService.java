@@ -19,4 +19,6 @@ public interface ProductEntityService extends CrudEntityService<Product, Long> {
     List<Product> findAllByWarehouseCode(String warehouseCode);
 
     List<String> findDistinctCategories();
+
+    List<Object[]> findUserProductsOnWarehouses(Long userId);
 }

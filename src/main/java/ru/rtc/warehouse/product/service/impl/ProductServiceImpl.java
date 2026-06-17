@@ -1,6 +1,7 @@
 package ru.rtc.warehouse.product.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.rtc.warehouse.product.controller.dto.request.ProductCreateRequest;
 import ru.rtc.warehouse.product.controller.dto.request.ProductUpdateRequest;
+import ru.rtc.warehouse.product.controller.dto.response.UserProductOnWarehouseDTO;
 import ru.rtc.warehouse.product.mapper.ProductMapper;
 import ru.rtc.warehouse.product.mapper.ProductWarehouseMapper;
 import ru.rtc.warehouse.product.model.Product;
@@ -124,6 +126,37 @@ public class ProductServiceImpl implements ProductService {
         );
         product.setIsDeleted(true);
         productEntityService.update(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserProductOnWarehouseDTO> findUserProductsOnWarehouses() {
+        User currentUser = userEntityService.getCurrentUser();
+
+        List<Object[]> rows = productEntityService.findUserProductsOnWarehouses(
+            currentUser.getId()
+        );
+
+        List<UserProductOnWarehouseDTO> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            result.add(
+                UserProductOnWarehouseDTO.builder()
+                    .skuCode((String) row[0])
+                    .productName((String) row[1])
+                    .category((String) row[2])
+                    .imageUrl((String) row[3])
+                    .warehouseCode((String) row[4])
+                    .warehouseName((String) row[5])
+                    .quantity((Integer) row[6])
+                    .zone((Integer) row[7])
+                    .row((Integer) row[8])
+                    .shelf((Integer) row[9])
+                    .minStock((Integer) row[10])
+                    .optimalStock((Integer) row[11])
+                    .build()
+            );
+        }
+        return result;
     }
 
     private ProductDTO enrichProductWithWarehouseInfo(Product product) {
