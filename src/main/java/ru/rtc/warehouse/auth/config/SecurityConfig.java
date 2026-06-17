@@ -83,6 +83,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth ->
                 auth
+                    // --- Public endpoints ---
                     .requestMatchers("/v3/api-docs/**")
                     .permitAll()
                     .requestMatchers("/swagger-ui/**")
@@ -101,34 +102,57 @@ public class SecurityConfig {
                         "/ws/info/**"
                     )
                     .permitAll()
-                    // ADMIN only: warehouse management
+
+                    // --- ADMIN only: warehouse CRUD ---
                     .requestMatchers(HttpMethod.POST, "/api/warehouse")
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/warehouse/**")
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/warehouse/**")
                     .hasRole("ADMIN")
-                    // ADMIN only: robot management
+
+                    // --- ADMIN only: robot registration/CRUD ---
                     .requestMatchers(HttpMethod.POST, "/api/robots/register")
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/robots/**")
                     .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/robots/**")
                     .hasRole("ADMIN")
-                    // ADMIN only: user creation
+
+                    // --- ADMIN only: user creation ---
                     .requestMatchers(HttpMethod.POST, "/api/*/users/register")
                     .hasRole("ADMIN")
-                    // WAREHOUSE_WORKER + ADMIN: inventory import
+
+                    // --- CSV import: ADMIN + WAREHOUSE_WORKER ---
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/*/inventory/import/**"
                     )
                     .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
-                    // WAREHOUSE_WORKER + ADMIN: all GET endpoints
-                    .requestMatchers(HttpMethod.GET, "/api/**")
+
+                    // --- Image upload/delete: ADMIN + WAREHOUSE_WORKER ---
+                    .requestMatchers(HttpMethod.POST, "/api/images/**")
                     .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
+                    .requestMatchers(HttpMethod.DELETE, "/api/images/**")
+                    .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
+
+                    // --- Report generation (pdf/excel): ADMIN + WAREHOUSE_WORKER ---
+                    .requestMatchers(HttpMethod.POST, "/api/reports/**")
+                    .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
+
+                    // --- ALL roles (ADMIN, WAREHOUSE_WORKER, VIEWER, MANAGER, OPERATOR): GET ---
+                    .requestMatchers(HttpMethod.GET, "/api/**")
+                    .hasAnyRole(
+                        "ADMIN",
+                        "WAREHOUSE_WORKER",
+                        "VIEWER",
+                        "MANAGER",
+                        "OPERATOR"
+                    )
+
+                    // --- Catch-all: only ADMIN and WAREHOUSE_WORKER for mutations ---
                     .anyRequest()
-                    .authenticated()
+                    .hasAnyRole("ADMIN", "WAREHOUSE_WORKER")
             )
             .userDetailsService(customUserDetailsService);
 
