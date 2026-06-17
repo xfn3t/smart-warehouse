@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-fix-product-report-view-status
+      author: dev
+      preConditions:
+        - viewExists:
+            viewName: v_product_report
+      changes:
+        - sql:
+            sql: DROP VIEW IF EXISTS v_product_report
+        - sql:
+            sql: >
+              CREATE VIEW v_product_report AS
+              SELECT
+                  p.id              AS product_id,
+                  p.sku_code        AS sku_code,
+                  p.name            AS product_name,
+                  p.category        AS category,
+                  w.code            AS warehouse_code,
+                  w.name            AS warehouse_name,
+                  pw.min_stock      AS min_stock,
+                  pw.optimal_stock  AS optimal_stock,
+                  ih.quantity       AS current_quantity,
+                  ih.expected_quantity AS expected_quantity,
+                  ih.difference     AS difference,
+                  CASE
+                      WHEN ih.quantity <= pw.min_stock THEN 'CRITICAL'
+                      WHEN ih.quantity <= pw.optimal_stock THEN 'LOW_STOCK'
+                      ELSE 'OK'
+                  END               AS inventory_status,
+                  ih.scanned_at     AS last_scanned_at
+              FROM products p
+              CROSS JOIN warehouses w
+              JOIN product_warehouse pw
+                  ON pw.product_id = p.id
+                  AND pw.warehouse_id = w.id
+                  AND pw.is_deleted = false
+              LEFT JOIN LATERAL (
+                  SELECT ih2.quantity, ih2.expected_quantity,
+                         ih2.difference, ih2.scanned_at
+                  FROM inventory_history ih2
+                  WHERE ih2.product_id = p.id
+                    AND ih2.warehouse_id = w.id
+                    AND ih2.is_deleted = false
+                  ORDER BY ih2.scanned_at DESC
+                  LIMIT 1
+              ) ih ON true
+              WHERE p.is_deleted = false
+                AND w.is_deleted = false;
