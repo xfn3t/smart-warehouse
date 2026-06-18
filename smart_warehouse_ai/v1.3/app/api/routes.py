@@ -10,10 +10,11 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from app.data_builder import build_dataset
-from app.model_service import ModelService
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
+from app.data_builder import build_dataset
+from app.model_service import ModelService
 
 router = APIRouter()
 

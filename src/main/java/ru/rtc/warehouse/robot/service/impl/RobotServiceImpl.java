@@ -82,39 +82,46 @@ public class RobotServiceImpl implements RobotService {
     @Override
     public RobotDTO update(RobotUpdateRequest request, Long robotId) {
         Robot robot = robotEntityService.findById(robotId);
-        return update(request, robot);
+        return applyUpdate(request, robot);
     }
 
     @Override
     public RobotDTO update(RobotUpdateRequest request, String robotCode) {
         Robot robot = robotEntityService.findByCode(robotCode);
-        return update(request, robot);
+        return applyUpdate(request, robot);
     }
 
-    private RobotDTO update(RobotUpdateRequest updateRequest, Robot robot) {
-        Warehouse warehouse = robot.getWarehouse();
+    private RobotDTO applyUpdate(RobotUpdateRequest req, Robot robot) {
+        if (req.getCode() != null && !req.getCode().isBlank()) {
+            robot.setCode(req.getCode());
+        }
 
-        if (
-            updateRequest.getCurrentZone() != null ||
-            updateRequest.getCurrentRow() != null ||
-            updateRequest.getCurrentShelf() != null
-        ) {
-            Integer zone =
-                updateRequest.getCurrentZone() != null
-                    ? updateRequest.getCurrentZone()
-                    : robot.getCurrentZone();
-            Integer row =
-                updateRequest.getCurrentRow() != null
-                    ? updateRequest.getCurrentRow()
-                    : robot.getCurrentRow();
-            Integer shelf =
-                updateRequest.getCurrentShelf() != null
-                    ? updateRequest.getCurrentShelf()
-                    : robot.getCurrentShelf();
+        if (req.getStatus() != null && !req.getStatus().isBlank()) {
+            RobotStatus status = robotStatusService.findByCode(
+                StatusCode.from(req.getStatus())
+            );
+            robot.setStatus(status);
+        }
 
-            robot.setCurrentZone(zone);
-            robot.setCurrentRow(row);
-            robot.setCurrentShelf(shelf);
+        if (req.getBatteryLevel() != null) {
+            robot.setBatteryLevel(req.getBatteryLevel());
+        }
+
+        if (req.getWarehouseId() != null) {
+            Warehouse warehouse = warehouseAdapter.findById(
+                req.getWarehouseId()
+            );
+            robot.setWarehouse(warehouse);
+        }
+
+        if (req.getCurrentZone() != null) {
+            robot.setCurrentZone(req.getCurrentZone());
+        }
+        if (req.getCurrentRow() != null) {
+            robot.setCurrentRow(req.getCurrentRow());
+        }
+        if (req.getCurrentShelf() != null) {
+            robot.setCurrentShelf(req.getCurrentShelf());
         }
 
         robot.setLastUpdate(LocalDateTime.now());

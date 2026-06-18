@@ -69,6 +69,8 @@ services:
     depends_on:
       - postgres
       - redis
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     networks:
       - backend
 
