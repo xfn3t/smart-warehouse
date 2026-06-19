@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-fix-daily-aggregation-view
+      author: dev
+      preConditions:
+        - viewExists:
+            viewName: v_daily_aggregation
+      changes:
+        - sql:
+            sql: DROP VIEW IF EXISTS v_daily_aggregation
+        - sql:
+            sql: >
+              CREATE VIEW v_daily_aggregation AS
+              SELECT
+                  ih.warehouse_id,
+                  w.code AS warehouse_code,
+                  date(ih.scanned_at) AS scan_date,
+                  count(*) AS total_scans,
+                  sum(ih.quantity) AS total_quantity,
+                  sum(ih.difference) AS total_difference,
+                  sum(abs(ih.difference)) AS total_abs_difference,
+                  count(DISTINCT ih.product_id) AS unique_products_scanned,
+                  count(DISTINCT ih.robot_id) AS unique_robots
+              FROM inventory_history ih
+              JOIN warehouses w
+                  ON w.id = ih.warehouse_id AND w.is_deleted = false
+              JOIN products p
+                  ON p.id = ih.product_id AND p.is_deleted = false
+              JOIN product_warehouse pw
+                  ON pw.product_id = ih.product_id
+                  AND pw.warehouse_id = ih.warehouse_id
+                  AND pw.is_deleted = false
+              WHERE ih.is_deleted = false
+              GROUP BY ih.warehouse_id, w.code, date(ih.scanned_at);

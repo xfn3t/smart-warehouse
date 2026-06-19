@@ -118,14 +118,32 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void delete(String productCode) {
+    public void delete(String productCode, String warehouseCode) {
         User currentUser = userEntityService.getCurrentUser();
         Product product = productEntityService.findByUserIdAndSkuCode(
             currentUser.getId(),
             productCode
         );
-        product.setIsDeleted(true);
-        productEntityService.update(product);
+        Warehouse warehouse = warehouseEntityService.findByCode(warehouseCode);
+
+        // Мягко удаляем связь продукт-склад
+        ProductWarehouse pw =
+            productWarehouseEntityService.findActiveByProductAndWarehouse(
+                product.getId(),
+                warehouse.getId()
+            );
+        pw.setIsDeleted(true);
+        productWarehouseEntityService.update(pw);
+
+        // Если не осталось активных связей со складами — удаляем сам продукт
+        List<ProductWarehouse> activeLinks =
+            productWarehouseEntityService.findActiveByProductId(
+                product.getId()
+            );
+        if (activeLinks.isEmpty()) {
+            product.setIsDeleted(true);
+            productEntityService.update(product);
+        }
     }
 
     @Override

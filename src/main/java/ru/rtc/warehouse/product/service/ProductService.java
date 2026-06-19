@@ -14,7 +14,11 @@ public interface ProductService {
     ProductDTO update(ProductUpdateRequest updateRequest, String productCode);
     ProductDTO findByCode(String productCode);
     List<ProductDTO> findAll();
-    void delete(String productCode);
+
+    /**
+     * Удаляет товар со склада (связь ProductWarehouse), а не сам продукт.
+     */
+    void delete(String productCode, String warehouseCode);
 
     List<UserProductOnWarehouseDTO> findUserProductsOnWarehouses();
 }

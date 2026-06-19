@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: v1.4-fix-warehouse-summary-view
+      author: dev
+      preConditions:
+        - viewExists:
+            viewName: v_warehouse_summary
+      changes:
+        - sql:
+            sql: DROP VIEW IF EXISTS v_warehouse_summary
+        - sql:
+            sql: >
+              CREATE VIEW v_warehouse_summary AS
+              SELECT
+                  w.id AS warehouse_id,
+                  w.code AS warehouse_code,
+                  w.name AS warehouse_name,
+                  COALESCE(sum(ih.quantity), 0::bigint) AS total_quantity,
+                  COALESCE(count(DISTINCT ih.product_id), 0::bigint) AS unique_sku_count,
+                  COALESCE(sum(ih.difference), 0::bigint) AS total_discrepancy,
+                  COALESCE(sum(abs(ih.difference)), 0::bigint) AS total_abs_discrepancy,
+                  max(ih.scanned_at) AS last_scan_at,
+                  COALESCE(
+                      sum(ih.quantity) FILTER (
+                          WHERE ih.status_id = (
+                              SELECT inventory_status.id
+                              FROM public.inventory_status
+                              WHERE inventory_status.code::text = 'CRITICAL'
+                          )
+                      ),
+                      0::bigint
+                  ) AS critical_count,
+                  COALESCE(
+                      sum(ih.quantity) FILTER (
+                          WHERE ih.status_id = (
+                              SELECT inventory_status.id
+                              FROM public.inventory_status
+                              WHERE inventory_status.code::text = 'LOW_STOCK'
+                          )
+                      ),
+                      0::bigint
+                  ) AS low_stock_count
+              FROM public.warehouses w
+              LEFT JOIN LATERAL (
+                  SELECT DISTINCT ON (ih2.product_id)
+                      ih2.product_id,
+                      ih2.quantity,
+                      ih2.difference,
+                      ih2.scanned_at,
+                      ih2.status_id
+                  FROM public.inventory_history ih2
+                  JOIN public.products p2
+                      ON p2.id = ih2.product_id AND p2.is_deleted = false
+                  JOIN public.product_warehouse pw2
+                      ON pw2.product_id = ih2.product_id
+                      AND pw2.warehouse_id = ih2.warehouse_id
+                      AND pw2.is_deleted = false
+                  WHERE ih2.warehouse_id = w.id
+                    AND ih2.is_deleted = false
+                  ORDER BY ih2.product_id, ih2.scanned_at DESC
+              ) ih ON true
+              WHERE w.is_deleted = false
+              GROUP BY w.id, w.code, w.name;

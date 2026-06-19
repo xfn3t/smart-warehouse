@@ -11,3 +11,9 @@ databaseChangeLog:
   - include:
       file: v1.4/fix-product-report-view-status.yaml
       relativeToChangelogFile: true
+  - include:
+      file: v1.4/fix-daily-aggregation-view.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: v1.4/fix-warehouse-summary-view.yaml
+      relativeToChangelogFile: true

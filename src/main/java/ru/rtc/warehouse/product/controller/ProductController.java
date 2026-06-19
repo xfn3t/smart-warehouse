@@ -56,9 +56,16 @@ public class ProductController {
         return ResponseEntity.ok(productService.findAll());
     }
 
-    @DeleteMapping("/{productCode}")
-    public ResponseEntity<Void> delete(@PathVariable String productCode) {
-        productService.delete(productCode);
+    @DeleteMapping("/warehouses/{warehouseCode}/{productCode}")
+    @RequiresOwnership(
+        codeParam = "warehouseCode",
+        entityType = RequiresOwnership.EntityType.WAREHOUSE
+    )
+    public ResponseEntity<Void> delete(
+        @PathVariable String warehouseCode,
+        @PathVariable String productCode
+    ) {
+        productService.delete(productCode, warehouseCode);
         return ResponseEntity.noContent().build();
     }
 

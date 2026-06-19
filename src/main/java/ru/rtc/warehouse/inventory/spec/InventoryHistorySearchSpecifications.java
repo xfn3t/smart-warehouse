@@ -25,7 +25,9 @@ public class InventoryHistorySearchSpecifications {
             .and(byStatuses(rq.getStatuses()))
             .and(byCategories(rq.getCategories()))
             .and(bySearchQuery(rq.getQ()))
-            .and(byRobots(rq.getRobots()));
+            .and(byRobots(rq.getRobots()))
+            .and(productNotDeleted())
+            .and(withActiveProductWarehouse());
     }
 
     private static Specification<InventoryHistory> notDeleted() {
@@ -132,6 +134,44 @@ public class InventoryHistorySearchSpecifications {
                 cb.like(cb.lower(productJoin.get("name")), likePattern),
                 cb.like(cb.lower(robotJoin.get("code")), likePattern)
             );
+        };
+    }
+
+    /**
+     * Исключает записи, где сам продукт помечен как удалённый.
+     */
+    private static Specification<InventoryHistory> productNotDeleted() {
+        return (root, query, cb) ->
+            cb.isFalse(root.get("product").get("isDeleted"));
+    }
+
+    /**
+     * Фильтрует только те записи инвентаризации, у которых связь
+     * product_warehouse активна (не удалена со склада).
+     */
+    private static Specification<
+        InventoryHistory
+    > withActiveProductWarehouse() {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<?> pwRoot = subquery.from(
+                ru.rtc.warehouse.product.model.ProductWarehouse.class
+            );
+
+            subquery.select(cb.literal(1L));
+            subquery.where(
+                cb.equal(
+                    pwRoot.get("product").get("id"),
+                    root.get("product").get("id")
+                ),
+                cb.equal(
+                    pwRoot.get("warehouse").get("id"),
+                    root.get("warehouse").get("id")
+                ),
+                cb.isFalse(pwRoot.get("isDeleted"))
+            );
+
+            return cb.exists(subquery);
         };
     }
 }

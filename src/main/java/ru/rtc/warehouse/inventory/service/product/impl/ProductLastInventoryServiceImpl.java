@@ -77,8 +77,6 @@ public class ProductLastInventoryServiceImpl
                 .stream()
                 .map(Enum::name)
                 .toList();
-            // Строим фильтр через HAVING на вычисляемом поле statusCode
-            // HAVING будет добавлен после подзапроса
             List<String> placeholders = new ArrayList<>();
             for (String s : statusNames) {
                 placeholders.add("?");
@@ -92,7 +90,8 @@ public class ProductLastInventoryServiceImpl
 
         String orderClause = buildOrderClause(pageable.getSort());
 
-        // Внутренний подзапрос: последнее сканирование + вычисляемый статус
+        // Внутренний подзапрос: последнее сканирование + вычисляемый статус.
+        // JOIN product_warehouse (не LEFT) — исключает товары, снятые со склада.
         String innerSql = """
             SELECT DISTINCT ON (ih.product_id)
                 p.sku_code AS productCode,
@@ -115,7 +114,7 @@ public class ProductLastInventoryServiceImpl
             FROM inventory_history ih
             JOIN products p ON p.id = ih.product_id AND p.is_deleted = false
             JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
-            LEFT JOIN product_warehouse pw
+            JOIN product_warehouse pw
                 ON pw.product_id = ih.product_id
                 AND pw.warehouse_id = ih.warehouse_id
                 AND pw.is_deleted = false

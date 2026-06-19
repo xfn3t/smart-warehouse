@@ -32,7 +32,11 @@ public class S3Service {
         this.productEntityService = productEntityService;
     }
 
-    public String uploadImage(MultipartFile file, String productSku) {
+    public String uploadImage(
+        MultipartFile file,
+        String productSku,
+        Long userId
+    ) {
         String extension = getExtension(file.getOriginalFilename());
         String key = UUID.randomUUID() + extension;
         try {
@@ -45,10 +49,18 @@ public class S3Service {
                 RequestBody.fromBytes(file.getBytes())
             );
             log.info("Uploaded image: {}/{}", PRODUCT_DIRECTORY, key);
-            Product product = productEntityService.findAnyBySkuCode(productSku);
+            Product product = productEntityService.findByUserIdAndSkuCode(
+                userId,
+                productSku
+            );
             product.setImageUrl(getUrl(key));
             productEntityService.save(product);
-            log.info("Product with SKU: {} has been uploaded", productSku);
+            log.info(
+                "Product SKU={} userId={} image set to {}",
+                productSku,
+                userId,
+                getUrl(key)
+            );
 
             return key;
         } catch (IOException e) {
@@ -85,10 +97,15 @@ public class S3Service {
         return new ByteArrayResource(bytes);
     }
 
-    public ByteArrayResource getImageBySku(String sku) {
-        String productImageUrl = productEntityService
-            .findAnyBySkuCode(sku)
-            .getImageUrl();
+    public ByteArrayResource getImageBySku(String sku, Long userId) {
+        Product product = productEntityService.findByUserIdAndSkuCode(
+            userId,
+            sku
+        );
+        String productImageUrl = product.getImageUrl();
+        if (productImageUrl == null || productImageUrl.isBlank()) {
+            throw new RuntimeException("No image for SKU: " + sku);
+        }
         UUID imageUid = UUID.fromString(
             productImageUrl.substring(productImageUrl.lastIndexOf('/') + 1)
         );
