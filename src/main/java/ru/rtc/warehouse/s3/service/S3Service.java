@@ -1,5 +1,7 @@
 package ru.rtc.warehouse.s3.service;
 
+import java.io.IOException;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,9 +12,6 @@ import ru.rtc.warehouse.product.service.ProductEntityService;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
-
-import java.io.IOException;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -46,7 +45,7 @@ public class S3Service {
                 RequestBody.fromBytes(file.getBytes())
             );
             log.info("Uploaded image: {}/{}", PRODUCT_DIRECTORY, key);
-            Product product = productEntityService.findBySkuCode(productSku);
+            Product product = productEntityService.findAnyBySkuCode(productSku);
             product.setImageUrl(getUrl(key));
             productEntityService.save(product);
             log.info("Product with SKU: {} has been uploaded", productSku);
@@ -62,12 +61,14 @@ public class S3Service {
         String prefix = PRODUCT_DIRECTORY + "/" + uidStr + ".";
 
         ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                .bucket(bucket)
-                .prefix(prefix)
-                .maxKeys(1)
-                .build();
+            .bucket(bucket)
+            .prefix(prefix)
+            .maxKeys(1)
+            .build();
 
-        ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
+        ListObjectsV2Response listResponse = s3Client.listObjectsV2(
+            listRequest
+        );
 
         if (listResponse.contents().isEmpty()) {
             throw new RuntimeException("File not found for uid: " + imageUid);
@@ -76,17 +77,21 @@ public class S3Service {
         String foundKey = listResponse.contents().get(0).key();
 
         GetObjectRequest getRequest = GetObjectRequest.builder()
-                .bucket(bucket)
-                .key(foundKey)
-                .build();
+            .bucket(bucket)
+            .key(foundKey)
+            .build();
         byte[] bytes = s3Client.getObjectAsBytes(getRequest).asByteArray();
 
         return new ByteArrayResource(bytes);
     }
 
     public ByteArrayResource getImageBySku(String sku) {
-        String productImageUrl = productEntityService.findBySkuCode(sku).getImageUrl();
-        UUID imageUid = UUID.fromString(productImageUrl.substring(productImageUrl.lastIndexOf('/')+1));
+        String productImageUrl = productEntityService
+            .findAnyBySkuCode(sku)
+            .getImageUrl();
+        UUID imageUid = UUID.fromString(
+            productImageUrl.substring(productImageUrl.lastIndexOf('/') + 1)
+        );
         return getImage(imageUid);
     }
 

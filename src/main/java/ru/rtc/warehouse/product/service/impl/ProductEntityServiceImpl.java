@@ -57,6 +57,62 @@ public class ProductEntityServiceImpl implements ProductEntityService {
     }
 
     @Override
+    public Product findByUserIdAndSkuCodeAndWarehouseCode(
+        Long userId,
+        String skuCode,
+        String warehouseCode
+    ) {
+        return productRepository
+            .findByUserIdAndSkuCodeAndWarehouseCode(
+                userId,
+                skuCode,
+                warehouseCode
+            )
+            .orElseThrow(() ->
+                new NotFoundException(
+                    "Product not found for user=" +
+                        userId +
+                        ", sku=" +
+                        skuCode +
+                        ", warehouse=" +
+                        warehouseCode
+                )
+            );
+    }
+
+    @Override
+    public Product findAnyBySkuCodeAndWarehouseCode(
+        String skuCode,
+        String warehouseCode
+    ) {
+        List<Product> products =
+            productRepository.findBySkuCodeAndWarehouseCode(
+                skuCode,
+                warehouseCode
+            );
+        if (products.isEmpty()) {
+            throw new NotFoundException(
+                "Product not found for sku=" +
+                    skuCode +
+                    ", warehouse=" +
+                    warehouseCode
+            );
+        }
+        // Если несколько продуктов с одинаковым SKU на складе, возвращаем первый
+        return products.get(0);
+    }
+
+    @Override
+    public Product findAnyBySkuCode(String skuCode) {
+        List<Product> products =
+            productRepository.findAnyBySkuCodeAndIsDeletedFalse(skuCode);
+        if (products.isEmpty()) {
+            throw new NotFoundException("Product not found for sku=" + skuCode);
+        }
+        return products.get(0);
+    }
+
+    @Override
     public List<Product> findAllActiveProducts() {
         return productRepository.findAllActiveProducts();
     }

@@ -123,7 +123,10 @@ public class PredictionServiceImpl implements PredictionService {
                 .stream()
                 .map(s -> {
                     try {
-                        return productEntityService.findBySkuCode(s);
+                        return productEntityService.findAnyBySkuCodeAndWarehouseCode(
+                            s,
+                            warehouseCode
+                        );
                     } catch (Exception e) {
                         return null;
                     }

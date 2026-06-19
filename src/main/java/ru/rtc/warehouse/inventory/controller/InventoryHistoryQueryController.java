@@ -7,11 +7,13 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.rtc.warehouse.auth.UserDetailsImpl;
 import ru.rtc.warehouse.common.aspect.RequiresOwnership;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistoryPageRequest;
 import ru.rtc.warehouse.inventory.controller.dto.request.InventoryHistorySearchRequest;
@@ -78,9 +80,16 @@ public class InventoryHistoryQueryController {
         @RequestParam(required = false) String from,
         @RequestParam(required = false) String to
     ) {
+        Long userId = getCurrentUserId();
         if ("full".equalsIgnoreCase(aggregation)) {
             return ResponseEntity.ok(
-                ihs.findFullHistory(warehouseCode, productCodes, from, to)
+                ihs.findFullHistory(
+                    warehouseCode,
+                    productCodes,
+                    from,
+                    to,
+                    userId
+                )
             );
         }
         if (aggregation != null && !aggregation.isBlank()) {
@@ -90,7 +99,8 @@ public class InventoryHistoryQueryController {
                     productCodes,
                     aggregation,
                     from,
-                    to
+                    to,
+                    userId
                 )
             );
         }
@@ -100,6 +110,16 @@ public class InventoryHistoryQueryController {
                 productCodes
             )
         );
+    }
+
+    private Long getCurrentUserId() {
+        Object principal = SecurityContextHolder.getContext()
+            .getAuthentication()
+            .getPrincipal();
+        if (principal instanceof UserDetailsImpl userDetails) {
+            return userDetails.getUser().getId();
+        }
+        throw new RuntimeException("User not authenticated");
     }
 
     @Operation(

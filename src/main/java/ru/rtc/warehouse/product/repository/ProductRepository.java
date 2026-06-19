@@ -24,6 +24,22 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Deprecated
     Optional<Product> findBySkuCodeAndIsDeletedFalse(String skuCode);
 
+    /**
+     * Безопасный поиск любого продукта по SKU (без userId).
+     * Возвращает первый попавшийся, если несколько пользователей имеют один SKU.
+     * Используется для операций, не требующих точной привязки к пользователю
+     * (например, получение изображения).
+     */
+    @Query(
+        "SELECT p FROM Product p " +
+            "WHERE p.skuCode = :skuCode " +
+            "AND p.isDeleted = false " +
+            "ORDER BY p.id"
+    )
+    List<Product> findAnyBySkuCodeAndIsDeletedFalse(
+        @Param("skuCode") String skuCode
+    );
+
     @Query("SELECT p FROM Product p WHERE p.isDeleted = false")
     List<Product> findAllActiveProducts();
 
@@ -82,6 +98,46 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySkuCodeAndWarehouse(
         @Param("skuCode") String skuCode,
         @Param("warehouse") Warehouse warehouse
+    );
+
+    /**
+     * Поиск продукта по userId + SKU + коду склада.
+     * Учитывает, что один SKU может быть у разных пользователей на одном складе.
+     */
+    @Query(
+        "SELECT p FROM Product p " +
+            "JOIN p.warehouseParameters pw " +
+            "JOIN pw.warehouse w " +
+            "WHERE p.skuCode = :skuCode " +
+            "AND p.user.id = :userId " +
+            "AND w.code = :warehouseCode " +
+            "AND p.isDeleted = false " +
+            "AND pw.isDeleted = false"
+    )
+    Optional<Product> findByUserIdAndSkuCodeAndWarehouseCode(
+        @Param("userId") Long userId,
+        @Param("skuCode") String skuCode,
+        @Param("warehouseCode") String warehouseCode
+    );
+
+    /**
+     * Поиск любого продукта по SKU + коду склада (без userId).
+     * Используется в AI/роботных сценариях, где пользователь неизвестен.
+     * Если несколько пользователей имеют один SKU на складе, возвращает первый.
+     */
+    @Query(
+        "SELECT p FROM Product p " +
+            "JOIN p.warehouseParameters pw " +
+            "JOIN pw.warehouse w " +
+            "WHERE p.skuCode = :skuCode " +
+            "AND w.code = :warehouseCode " +
+            "AND p.isDeleted = false " +
+            "AND pw.isDeleted = false " +
+            "ORDER BY p.id"
+    )
+    List<Product> findBySkuCodeAndWarehouseCode(
+        @Param("skuCode") String skuCode,
+        @Param("warehouseCode") String warehouseCode
     );
 
     @Query(

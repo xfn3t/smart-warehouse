@@ -16,11 +16,43 @@ public class IHProductEntServiceAdapter {
     }
 
     /**
+     * Поиск продукта по userId + SKU + коду склада.
+     * Основной метод для пользовательских запросов.
+     */
+    public Product findByUserIdAndSkuCodeAndWarehouseCode(
+        Long userId,
+        String skuCode,
+        String warehouseCode
+    ) {
+        return productEntityService.findByUserIdAndSkuCodeAndWarehouseCode(
+            userId,
+            skuCode,
+            warehouseCode
+        );
+    }
+
+    /**
+     * Поиск продукта по SKU + коду склада (без userId).
+     * Для AI/роботных сценариев.
+     */
+    public Product findBySkuCodeAndWarehouseCode(
+        String skuCode,
+        String warehouseCode
+    ) {
+        return productEntityService.findAnyBySkuCodeAndWarehouseCode(
+            skuCode,
+            warehouseCode
+        );
+    }
+
+    /**
      * Поиск продукта по SKU (глобальный, без userId).
      * Используется в MapStruct-мапперах, где нет контекста пользователя.
+     * @deprecated Используйте findByUserIdAndSkuCodeAndWarehouseCode или findBySkuCodeAndWarehouseCode
      */
+    @Deprecated
     public Product findByCode(String code) {
-        return productEntityService.findBySkuCode(code);
+        return productEntityService.findAnyBySkuCode(code);
     }
 
     public Product save(Product product) {

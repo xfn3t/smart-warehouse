@@ -283,7 +283,8 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
         List<String> productCodes,
         String period,
         String from,
-        String to
+        String to,
+        Long userId
     ) {
         List<Object[]> rows =
             inventoryHistoryRepository.findSmoothedByWarehouseAndSkus(
@@ -309,6 +310,7 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                 JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
                 WHERE w.code = ?
                   AND p.sku_code = ANY(?)
+                  AND p.user_id = ?
                   AND ih.is_deleted = false
                 ORDER BY p.sku_code, ih.scanned_at DESC
                 """,
@@ -318,7 +320,8 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                         rs.getInt("quantity")
                     ),
                 warehouseCode,
-                grouped.keySet().toArray(new String[0])
+                grouped.keySet().toArray(new String[0]),
+                userId
             );
         }
 
@@ -329,7 +332,12 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                 InventoryHistorySmoothedDTO dto =
                     new InventoryHistorySmoothedDTO();
                 dto.setSkuCode(entry.getKey());
-                Product product = productAdapter.findByCode(entry.getKey());
+                Product product =
+                    productAdapter.findByUserIdAndSkuCodeAndWarehouseCode(
+                        userId,
+                        entry.getKey(),
+                        warehouseCode
+                    );
                 dto.setProduct(productMapper.toDto(product));
                 dto.setCurrentQuantity(currentQtyMap.get(entry.getKey()));
                 dto.setDataPoints(
@@ -356,7 +364,8 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
         String warehouseCode,
         List<String> productCodes,
         String from,
-        String to
+        String to,
+        Long userId
     ) {
         List<Object[]> rows =
             inventoryHistoryRepository.findFullHistoryByWarehouseAndSkus(
@@ -381,6 +390,7 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                 JOIN warehouses w ON w.id = ih.warehouse_id AND w.is_deleted = false
                 WHERE w.code = ?
                   AND p.sku_code = ANY(?)
+                  AND p.user_id = ?
                   AND ih.is_deleted = false
                 ORDER BY p.sku_code, ih.scanned_at DESC
                 """,
@@ -390,7 +400,8 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                         rs.getInt("quantity")
                     ),
                 warehouseCode,
-                grouped.keySet().toArray(new String[0])
+                grouped.keySet().toArray(new String[0]),
+                userId
             );
         }
 
@@ -401,7 +412,12 @@ public class InventoryHistoryServiceImpl implements InventoryHistoryService {
                 InventoryHistorySmoothedDTO dto =
                     new InventoryHistorySmoothedDTO();
                 dto.setSkuCode(entry.getKey());
-                Product product = productAdapter.findByCode(entry.getKey());
+                Product product =
+                    productAdapter.findByUserIdAndSkuCodeAndWarehouseCode(
+                        userId,
+                        entry.getKey(),
+                        warehouseCode
+                    );
                 dto.setProduct(productMapper.toDto(product));
                 dto.setCurrentQuantity(currentQtyMap.get(entry.getKey()));
                 dto.setDataPoints(

@@ -43,13 +43,15 @@ public interface InventoryHistoryService {
         List<String> productCodes,
         String period,
         String from,
-        String to
+        String to,
+        Long userId
     );
 
     List<InventoryHistorySmoothedDTO> findFullHistory(
         String warehouseCode,
         List<String> productCodes,
         String from,
-        String to
+        String to,
+        Long userId
     );
 }
