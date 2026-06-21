@@ -23,6 +23,7 @@ import ru.rtc.warehouse.auth.repository.RobotTokenRepository;
 import ru.rtc.warehouse.auth.util.JwtAuthenticationFilter;
 import ru.rtc.warehouse.auth.util.JwtUtil;
 import ru.rtc.warehouse.auth.util.RobotTokenAuthenticationFilter;
+import ru.rtc.warehouse.config.RateLimitFilter;
 
 @Configuration
 @EnableMethodSecurity
@@ -32,6 +33,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final UserDetailsServiceImpl customUserDetailsService;
     private final RobotTokenRepository robotTokenRepository;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -156,6 +158,10 @@ public class SecurityConfig {
             )
             .userDetailsService(customUserDetailsService);
 
+        http.addFilterBefore(
+            rateLimitFilter,
+            UsernamePasswordAuthenticationFilter.class
+        );
         http.addFilterBefore(
             robotTokenAuthenticationFilter(),
             UsernamePasswordAuthenticationFilter.class

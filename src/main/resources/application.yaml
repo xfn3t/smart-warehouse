@@ -44,6 +44,8 @@ security:
     refresh-token-exp-seconds: 1209600
 
 app:
+  rate-limit:
+    max-requests-per-second: 100
   dashboard:
     push-interval-ms: 30000
     ttl:
